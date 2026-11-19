@@ -12,7 +12,7 @@ function mix(h) {
   return h ^ (h >>> 16);
 }
 
-export function hash(x, y, s) {
+function hash(x, y, s) {
   return mix(mix(mix(s) ^ x) + y) >>> 0;
 }
 
@@ -28,7 +28,7 @@ function lerp(a, b, t) {
   return a + (b - a) * t;
 }
 
-export function valueNoise(x, y, s, p) {
+function valueNoise(x, y, s, p) {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const u = fade(x - x0);
@@ -44,7 +44,7 @@ export function valueNoise(x, y, s, p) {
   return lerp(lerp(a, b, u), lerp(c, d, u), v) * 2 - 1;
 }
 
-export function perlin(x, y, s, p) {
+function perlin(x, y, s, p) {
   const x0 = Math.floor(x);
   const y0 = Math.floor(y);
   const fx = x - x0;
@@ -66,7 +66,7 @@ export function perlin(x, y, s, p) {
   return lerp(lerp(n00, n10, u), lerp(n01, n11, u), v) * 1.4142;
 }
 
-export function worley(x, y, s, p, o) {
+function worley(x, y, s, p, o) {
   const xi = Math.floor(x);
   const yi = Math.floor(y);
   let f1 = 1e9;

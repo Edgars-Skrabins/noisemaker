@@ -51,8 +51,6 @@ export const NOISE_KEYS = new Set([
   'fractal', 'octaves', 'lacunarity', 'gain', 'warp', 'normalize', 'size',
 ]);
 
-export const VIEW_KEYS = new Set(['tilePreview', 'size', 'format', 'quality']);
-
 function sanitizeValue(key, value) {
   const fallback = DEFAULTS[key];
   if (OPTIONS[key]) return OPTIONS[key].includes(value) ? value : fallback;

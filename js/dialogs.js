@@ -33,7 +33,7 @@ function wire(dialog) {
   });
 }
 
-export function firstStop(dialog) {
+function firstStop(dialog) {
   return stops(dialog)[0] || null;
 }
 
