@@ -129,8 +129,8 @@ Baseline before starting: 53 tests passing.
 - [x] C4. `js/app.js`: Load dialog flow (tabs, saved list, templates, discard confirmation, delete confirmation, deleting the open map).
 
 ### D. Docs
-- [ ] D1. Update `README.md`, `CLAUDE.md`, `PRODUCT.md` and `DESIGN.md` as in 2.2.
+- [x] D1. Update `README.md`, `CLAUDE.md`, `PRODUCT.md` and `DESIGN.md` as in 2.2.
 
 ### Z. Wrap-up
-- [ ] Z1. `npm test` passes.
-- [ ] Z2. Manual check via `python3 -m http.server 5173`: save new, overwrite, save as new, load template, load saved, delete (including the open map), unsaved-changes prompt, Cmd/Ctrl+S, storage-full message (simulated), reload persistence, keyboard-only dialog use, narrow layout, no console errors.
+- [x] Z1. `npm test` passes.
+- [x] Z2. Manual check via `python3 -m http.server 5173`: save new, overwrite, save as new, load template, load saved, delete (including the open map), unsaved-changes prompt, Cmd/Ctrl+S, storage-full message (simulated), reload persistence, keyboard-only dialog use, narrow layout, no console errors.
