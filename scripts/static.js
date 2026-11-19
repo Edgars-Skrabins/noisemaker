@@ -18,6 +18,10 @@ export const MIME_TYPES = Object.freeze({
   '.txt': 'text/plain; charset=utf-8',
 });
 
+export function portFromEnv(value, fallback = 5173) {
+  return Number(value) || fallback;
+}
+
 export function contentType(filePath) {
   return MIME_TYPES[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream';
 }

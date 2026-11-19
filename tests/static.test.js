@@ -4,7 +4,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { contentType, resolvePath, createStaticServer } from '../scripts/static.js';
+import { contentType, portFromEnv, resolvePath, createStaticServer } from '../scripts/static.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 
@@ -42,6 +42,14 @@ test('contentType maps the served file types', () => {
   assert.equal(contentType('a.txt'), 'text/plain; charset=utf-8');
   assert.equal(contentType('a.unknown'), 'application/octet-stream');
   assert.equal(contentType('Makefile'), 'application/octet-stream');
+});
+
+test('portFromEnv falls back to 5173 when PORT is unset, empty or not a number', () => {
+  assert.equal(portFromEnv(undefined), 5173);
+  assert.equal(portFromEnv(''), 5173);
+  assert.equal(portFromEnv('0'), 5173);
+  assert.equal(portFromEnv('abc'), 5173);
+  assert.equal(portFromEnv('8080'), 8080);
 });
 
 test('resolvePath maps URLs to files inside the root', () => {
