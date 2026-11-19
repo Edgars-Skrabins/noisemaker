@@ -196,20 +196,17 @@ function fit() {
 
 function updateCursor() {
   const out = $('#status-cursor');
-  if (!pointer || !lastOut) {
-    out.textContent = '';
-    return;
-  }
   const rect = view.getBoundingClientRect();
   const size = state.size;
-  const p = pointerToPixel(pointer.x - rect.left, pointer.y - rect.top, rect.width, rect.height, size, size, tiles());
+  const p = pointer && lastOut && pointerToPixel(pointer.x - rect.left, pointer.y - rect.top, rect.width, rect.height, size, size, tiles());
+  out.classList.toggle('idle', !p);
   if (!p) {
-    out.textContent = '';
+    out.textContent = 'X –   Y –   Value –';
     return;
   }
   const { res, height } = lastOut;
   const v = height[Math.floor((p.y * res) / size) * res + Math.floor((p.x * res) / size)];
-  out.textContent = `X ${p.x}   Y ${p.y}   ${v.toFixed(3)} · ${Math.round(v * 255)}`;
+  out.textContent = `X ${p.x}   Y ${p.y}   Value ${v.toFixed(3)} · ${Math.round(v * 255)}`;
 }
 
 function onChange(key) {
@@ -539,5 +536,6 @@ setupHelp();
 writeControls();
 bind();
 layout();
+updateCursor();
 regen();
 buildPresets().catch((err) => toast('Preset thumbnails failed: ' + err.message));

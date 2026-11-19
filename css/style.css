@@ -222,7 +222,8 @@ button, input, select { font: inherit; color: inherit; }
 }
 
 .status-state { min-width: 68px; }
-.status-cursor { margin-left: auto; color: var(--text); overflow: hidden; text-overflow: ellipsis; }
+.status-cursor { margin-left: auto; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: pre; }
+.status-cursor.idle { color: var(--text-2); }
 
 .dock {
   overflow-y: auto;
@@ -584,6 +585,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   .viewport { padding: 12px; }
   .dock { overflow: visible; border-left: 0; border-top: 1px solid var(--edge); }
   .status-doc { display: none; }
+  .preset { font-size: 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
