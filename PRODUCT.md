@@ -22,7 +22,5 @@ web (desktop first; a narrow stacked layout keeps it usable on small screens).
 - The chrome stays achromatic so it never tints the perception of the map.
 
 ## Features
-- Saved maps in the browser with save, overwrite and save-as-new, and a "Load map" dialog offering saved maps or templates (the presets).
-
-## Planned
-- A start screen listing saved maps and "New map".
+- A start screen listing the saved maps (open, delete) with "New map", which starts a blank map or one from a template.
+- Saved maps in the browser with save, overwrite and save-as-new, and a "Load map" dialog in the editor offering saved maps or templates (the presets).

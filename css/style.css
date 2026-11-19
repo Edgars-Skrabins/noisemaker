@@ -89,7 +89,33 @@ button, input, select { font: inherit; color: inherit; }
   background: conic-gradient(#b8b8b8 0 25%, #5a5a5a 0 50%, #8a8a8a 0 75%, #e3e3e3 0);
 }
 
-.brand h1 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0; }
+.home {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 24px;
+  margin-left: -6px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.home:hover { background: var(--raised); }
+.home:active { background: var(--pressed); }
+.home:disabled { cursor: default; background: transparent; }
+
+[data-screen="start"] .workspace,
+[data-screen="start"] .doc,
+[data-screen="start"] .topbar .toolbar,
+[data-screen="editor"] .start { display: none; }
+
+[data-screen="start"] .brand { border-right: 0; }
 
 .toolbar { display: flex; align-items: center; gap: 2px; }
 .toolbar-end { margin-left: auto; }
@@ -106,7 +132,8 @@ button, input, select { font: inherit; color: inherit; }
   white-space: nowrap;
 }
 
-.doc-name { overflow: hidden; text-overflow: ellipsis; color: var(--text); }
+.doc-name { margin: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 12px; font-weight: 400; }
+.doc-name:focus { outline: none; }
 .doc-dirty { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--text); align-self: center; }
 .doc-note { flex: none; color: var(--text-2); font-size: 11px; }
 
@@ -675,6 +702,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .map-thumb {
   display: block;
   width: 100%;
+  height: auto;
   aspect-ratio: 1;
   margin-bottom: 4px;
   border-radius: 2px;
@@ -687,7 +715,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .map-meta { color: var(--text-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-open:hover .map-thumb { box-shadow: 0 0 0 1px #6a6a6a; }
 .map-open:focus-visible { outline: none; }
-.map-open:focus-visible .map-thumb { box-shadow: 0 0 0 2px var(--accent), 0 0 0 3px var(--panel), 0 0 0 4px var(--accent); }
+.map-open:focus-visible .map-thumb { box-shadow: 0 0 0 2px var(--accent), 0 0 0 3px var(--card-gap, var(--panel)), 0 0 0 4px var(--accent); }
 .map-card.current .map-thumb { box-shadow: 0 0 0 2px var(--accent); }
 
 .map-badge {
@@ -717,6 +745,51 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 
 .map-empty { grid-column: 1 / -1; padding: 32px 0; color: var(--text-2); text-align: center; }
 
+.start {
+  --card-gap: var(--pasteboard);
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--pasteboard);
+}
+
+.start-inner {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.start-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  min-height: 28px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.start-head h1 { margin: 0; font-size: 15px; font-weight: 600; }
+.start-head h1:focus { outline: none; }
+.start-count { color: var(--text-2); font-size: 11px; font-variant-numeric: tabular-nums; }
+.start-head .btn { align-self: center; margin-left: auto; }
+.start-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+
+.start-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 56px 16px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--panel);
+  text-align: center;
+}
+
+.start-empty h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.start-empty p { max-width: 40ch; margin: 0 0 8px; color: var(--text-2); }
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -738,7 +811,12 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   .status-doc { display: none; }
   .topbar { gap: 6px; }
   .brand { padding-right: 6px; }
-  .brand h1 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .brand-name { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .home { height: 32px; padding: 0 9px; }
+  [data-screen="start"] .brand-name { position: static; width: auto; height: auto; overflow: visible; clip: auto; }
+  .start { min-height: calc(100vh - 40px); }
+  .start-inner { padding: 16px; }
+  .start-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
   .doc { flex: 1; max-width: none; padding-right: 6px; }
   .doc-note { display: none; }
   .toolbar-end { margin-left: 0; }

@@ -9,10 +9,14 @@ import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel, previewResolution
 import { commitNumber, formatNumber } from './fields.js';
 import {
   UNTITLED, mapSettings, isDirty, cleanName, copyName, fileSlug,
-  listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent,
+  listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent, startMap,
 } from './maps.js';
 import { openDialog, confirmDialog } from './dialogs.js';
 import { renderSavedList, renderTemplateList } from './library.js';
+
+const EDITOR_HASH = '#editor';
+const BLANK = { name: 'Blank', settings: {} };
+const STARTS = [BLANK, ...PRESETS];
 
 const THUMB_SIZE = 128;
 const THUMB_QUALITY = 0.85;
@@ -49,6 +53,9 @@ let regenTimer = 0;
 let current = loadCurrent(storage);
 let saving = false;
 let templatesBuilt = false;
+let newBuilt = false;
+let thumbJobs = null;
+let screen = document.documentElement.dataset.screen === 'editor' ? 'editor' : 'start';
 let toastTimer = 0;
 let progressTimer = 0;
 let zoom = 1;
@@ -89,7 +96,7 @@ function updateDoc() {
   $('#doc-name').title = current.name;
   $('#doc-dirty').hidden = !dirty;
   $('#doc-note').hidden = !!current.mapId;
-  document.title = `${dirty ? '• ' : ''}${current.name} — Noisemaker`;
+  if (screen === 'editor') document.title = `${dirty ? '• ' : ''}${current.name} — Noisemaker`;
 }
 
 function readInput(el) {
@@ -204,6 +211,7 @@ function draw() {
 }
 
 function layout() {
+  if (screen !== 'editor') return;
   const doc = state.size * tiles();
   if (fitMode) zoom = fitZoom(viewport.clientWidth, viewport.clientHeight, doc, doc, VIEW_PAD);
   const px = Math.max(1, Math.round(doc * zoom));
@@ -454,12 +462,14 @@ function applyMap(settings) {
   setState({ ...mapSettings(settings), tilePreview: state.tilePreview });
 }
 
+function startNew(template) {
+  const next = startMap(template, state);
+  setCurrent(next.current);
+  applyMap(next.settings);
+}
+
 function loadTemplate(i) {
-  const preset = PRESETS[i];
-  const keep = { size: state.size, format: state.format, quality: state.quality };
-  const settings = mapSettings({ ...DEFAULTS, ...preset.settings, ...keep });
-  setCurrent({ mapId: null, template: preset.name, name: preset.name, base: settings });
-  applyMap(settings);
+  startNew(PRESETS[i]);
 }
 
 function loadSaved(map) {
@@ -480,20 +490,29 @@ async function chooseTemplate(i, btn) {
   $('#load-dialog').close('loaded');
 }
 
-async function removeSaved(map, btn) {
+async function confirmDelete(map, btn) {
   const ok = await confirmDialog({
     title: 'Delete map',
     message: `Delete “${map.name}”? This can't be undone.`,
     confirm: 'Delete',
     opener: btn,
   });
-  if (!ok) return;
+  if (!ok) return false;
   const res = deleteMap(storage, map.id);
   if (!res.ok) {
     toast('Couldn\'t delete: browser storage is unavailable');
-    return;
+    return false;
   }
-  if (map.id === current.mapId) setCurrent({ ...current, mapId: null, template: null, base: null });
+  return true;
+}
+
+function detachCurrent() {
+  setCurrent({ ...current, mapId: null, template: null, base: null });
+}
+
+async function removeSaved(map, btn) {
+  if (!(await confirmDelete(map, btn))) return;
+  if (map.id === current.mapId) detachCurrent();
   renderSaved();
   $('#tab-saved').focus();
 }
@@ -516,19 +535,30 @@ function selectTab(name, focus = false) {
   });
 }
 
-async function buildTemplates() {
-  if (templatesBuilt) return;
+function templateThumbs() {
+  if (thumbJobs) return thumbJobs;
+  const worker = new NoiseWorker();
+  let chain = Promise.resolve();
+  const jobs = STARTS.map((t) => (chain = chain.then(() => thumbImage(worker, { ...DEFAULTS, ...t.settings }))));
+  chain.catch(() => { if (thumbJobs === jobs) thumbJobs = null; }).finally(() => worker.terminate());
+  jobs.forEach((job) => job.catch(() => {}));
+  thumbJobs = jobs;
+  return jobs;
+}
+
+function drawThumbs(canvases, offset) {
+  const jobs = templateThumbs();
+  return Promise.all(canvases.map((canvas, i) => jobs[i + offset].then((img) => canvas.getContext('2d').putImageData(img, 0, 0))));
+}
+
+function buildTemplates() {
+  if (templatesBuilt) return Promise.resolve();
   templatesBuilt = true;
   const canvases = renderTemplateList($('#template-list'), PRESETS, { size: THUMB_SIZE, onOpen: chooseTemplate });
-  const worker = new NoiseWorker();
-  try {
-    for (let i = 0; i < PRESETS.length; i++) {
-      const s = { ...DEFAULTS, ...PRESETS[i].settings };
-      canvases[i].getContext('2d').putImageData(await thumbImage(worker, s), 0, 0);
-    }
-  } finally {
-    worker.terminate();
-  }
+  return drawThumbs(canvases, 1).catch((err) => {
+    templatesBuilt = false;
+    throw err;
+  });
 }
 
 function openLoad() {
@@ -540,6 +570,105 @@ function openLoad() {
   selectTab(hasSaved ? 'saved' : 'templates');
   const dialog = $('#load-dialog');
   openDialog(dialog, { opener: $('#load-map'), focus: hasSaved ? $('#tab-saved') : $('#tab-templates') });
+}
+
+function setHash(name) {
+  const url = location.pathname + location.search + (name === 'editor' ? EDITOR_HASH : '');
+  if (location.href.slice(location.origin.length) !== url) history.replaceState(null, '', url);
+}
+
+function showScreen(name, { focus = true } = {}) {
+  screen = name;
+  document.documentElement.dataset.screen = name;
+  setHash(name);
+  hideTip();
+  $('#home').disabled = name === 'start';
+  if (name === 'editor') {
+    updateDoc();
+    layout();
+    if (!last && !previewBusy) scheduleRegen();
+    if (focus) $('#doc-name').focus();
+  } else {
+    document.title = 'Noisemaker';
+    renderStart();
+    if (focus) $('#start-title').focus();
+  }
+}
+
+function clearEditor() {
+  const next = startMap(null, state);
+  clearTimeout(regenTimer);
+  reqId++;
+  if (previewWorker) {
+    previewWorker.terminate();
+    previewWorker = null;
+  }
+  previewBusy = false;
+  setBusy(false);
+  state = { ...next.settings, tilePreview: state.tilePreview };
+  last = null;
+  lastOut = null;
+  writeControls();
+  saveSettings(storage, state);
+  setCurrent(next.current);
+}
+
+async function goHome() {
+  if (screen !== 'editor') return true;
+  commitFocusedField();
+  hideTip();
+  const dirty = isDirty(state, current.base);
+  if (dirty && !(await confirmDiscard($('#home')))) return false;
+  if (dirty) clearEditor();
+  showScreen('start');
+  return true;
+}
+
+function renderStart() {
+  syncCurrent();
+  const maps = listMaps(storage);
+  const has = maps.length > 0;
+  $('#start-list').hidden = !has;
+  $('#start-empty').hidden = has;
+  $('#new-map').hidden = !has;
+  $('#start-count').textContent = has ? `${maps.length} saved ${maps.length === 1 ? 'map' : 'maps'}` : '';
+  if (has) renderSavedList($('#start-list'), maps, { onOpen: openFromStart, onDelete: removeFromStart });
+  else $('#start-list').replaceChildren();
+}
+
+async function openFromStart(map, btn) {
+  if (!(await confirmDiscard(btn))) return;
+  loadSaved(map);
+  showScreen('editor');
+}
+
+async function removeFromStart(map, btn) {
+  if (!(await confirmDelete(map, btn))) return;
+  if (map.id === current.mapId) {
+    if (isDirty(state, current.base)) detachCurrent();
+    else clearEditor();
+  }
+  renderStart();
+  ($('#new-map').hidden ? $('#new-map-empty') : $('#new-map')).focus();
+}
+
+async function chooseNew(i, btn) {
+  if (!(await confirmDiscard(btn))) return;
+  startNew(i === 0 ? null : STARTS[i]);
+  $('#new-dialog').close('created');
+  showScreen('editor');
+}
+
+function openNew(opener) {
+  if (!newBuilt) {
+    newBuilt = true;
+    const canvases = renderTemplateList($('#new-list'), STARTS, { size: THUMB_SIZE, onOpen: chooseNew });
+    drawThumbs(canvases, 0).catch((err) => {
+      newBuilt = false;
+      toast('Template thumbnails failed: ' + err.message);
+    });
+  }
+  openDialog($('#new-dialog'), { opener, focus: $('#new-list .map-open') });
 }
 
 function dialogOpen() {
@@ -695,6 +824,18 @@ function bind() {
   $('#randomize').addEventListener('click', () => setState(randomize()));
   $('#reset').addEventListener('click', () => setState({ ...DEFAULTS }));
   $('#save-map').addEventListener('click', openSave);
+  $('#home').addEventListener('click', goHome);
+  $('#new-map').addEventListener('click', (e) => openNew(e.currentTarget));
+  $('#new-map-empty').addEventListener('click', (e) => openNew(e.currentTarget));
+  window.addEventListener('hashchange', async () => {
+    if (location.hash === EDITOR_HASH) {
+      if (screen !== 'editor') showScreen('editor');
+    } else if (screen === 'editor' && !(await goHome())) {
+      setHash('editor');
+    } else if (screen === 'start') {
+      setHash('start');
+    }
+  });
   $('#load-map').addEventListener('click', openLoad);
   $('#save-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -733,10 +874,10 @@ function bind() {
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
       e.preventDefault();
-      if (!dialogOpen()) openSave();
+      if (!dialogOpen() && screen === 'editor') openSave();
       return;
     }
-    if (dialogOpen()) return;
+    if (dialogOpen() || screen !== 'editor') return;
     if (e.key === 'Escape' && tipButton) {
       hideTip();
       return;
@@ -761,6 +902,5 @@ syncCurrent();
 writeControls();
 updateDoc();
 bind();
-layout();
 updateCursor();
-regen();
+showScreen(screen, { focus: false });
