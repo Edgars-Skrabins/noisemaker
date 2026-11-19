@@ -86,6 +86,8 @@ Recorded because this sub-session runs autonomously without stopping for approva
 - A10. Help text tone: plain, second person, at most two sentences, says what the setting does and what higher/lower values look like.
 - A11. Numeric fields are text inputs, not `type="number"`, so they always show `.` decimals regardless of browser locale and accept both `.` and `,`; ArrowUp/ArrowDown step by the slider step (×10 with Shift), Escape reverts.
 - A12. In the dock the tooltip opens to the left of the dock, so it never covers the setting it explains; when there's no room (narrow layout) it opens below the button. It closes when the dock or page scrolls.
+- A13. The status bar shows a dimmed resting readout "X –  Y –  Value –" from page load, so the cursor readout is discoverable before the pointer enters the map (finish review, 2026-11-19).
+- A14. The finish review's process item (running the impeccable concept roll and recording a seed) is not done: the brief pins the direction (A9). Its preset-highlight suggestion doesn't apply, because the defaults match no preset (finish review, 2026-11-19).
 
 # Part 3 — Implementation TODO
 
@@ -105,12 +107,12 @@ Baseline before starting: 33 tests passing.
 
 ### C. Design review
 - [x] C1. Verify in the browser at desktop (1440×900) and narrow (390 wide) widths: every panel, every type's conditional rows, tooltips by hover/focus/click, numeric commits, zoom, tile, presets, export and copy, no console errors.
-- [ ] C2. Run the impeccable detector on the changed files, then a critique/polish pass (fresh finish review) and fix what holds.
+- [x] C2. Run the impeccable detector on the changed files, then a critique/polish pass (fresh finish review) and fix what holds.
 
 ### D. Docs
 - [x] D1. `PRODUCT.md` and `DESIGN.md` at the repository root.
 - [x] D2. Update `README.md` and `CLAUDE.md` for the new modules and docs.
 
 ### Z. Wrap-up
-- [ ] Z1. `npm test` passes.
-- [ ] Z2. Manual check in the browser via `python3 -m http.server 5173`: generation for each type, presets, Tile 2×2, zoom, R/T, Randomize, Reset, export in every format, Copy PNG, reload restores settings, no console errors.
+- [x] Z1. `npm test` passes.
+- [x] Z2. Manual check in the browser via `python3 -m http.server 5173`: generation for each type, presets, Tile 2×2, zoom, R/T, Randomize, Reset, export in every format, Copy PNG, reload restores settings, no console errors.
