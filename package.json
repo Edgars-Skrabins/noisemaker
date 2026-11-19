@@ -5,6 +5,7 @@
   "description": "Generate seamlessly tileable grayscale noise maps in the browser.",
   "type": "module",
   "scripts": {
+    "start": "node scripts/serve.js",
     "test": "node --test"
   }
 }

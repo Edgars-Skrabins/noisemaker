@@ -7,10 +7,11 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 - Plain HTML, CSS and JavaScript using native ES modules. No framework, no bundler, no build step, no runtime dependencies.
 - Noise generation runs in a Web Worker so the UI stays responsive.
 - Saved user data lives in `localStorage`: the last used settings (`js/storage.js`), the saved maps and the map being edited (`js/maps.js`).
-- Tests use Node's built-in test runner (`node --test`), with no test dependencies.
+- Node, using only its built-in modules, runs the local dev server (`scripts/serve.js`) and the tests (`node --test`). No dependencies.
 
 ## Layout
 - `index.html`, `css/`, `js/`, `fonts/`: the app, served as-is from the repository root. Fonts (IBM Plex) are self-hosted so the Content-Security-Policy stays `'self'`-only; never load fonts or other assets from a CDN.
+- `scripts/`: the local static dev server (`serve.js` starts it, `static.js` holds the testable pieces).
 - `tests/`: Node tests for the pure, DOM-free modules in `js/`, plus checks that `index.html` matches the settings definitions.
 - `prototype/`: the original single-page prototype. Reference only, never edited and not part of the app.
 - `specs/`: feature and bug-fix specs.
@@ -21,7 +22,7 @@ Keep pure logic (noise math, image post-processing, file encoders, storage) in m
 The editor is a sidebar of numbered settings steps (`details.step`, one open at a time, each with a summary from `js/summary.js`) next to a stage with the preview on a print mat and the contact sheet of alternative seeds (`js/sheet.js`). The app is one page with two screens, the start screen and the editor, switched by `data-screen` on `<html>` in `js/app.js`. The editor is reflected in the URL as `#editor` (set with `history.replaceState`, so there are no history entries per screen); the plain URL opens the start screen. Keep all paths relative so the site works from any folder, e.g. GitHub Pages.
 
 ## Commands
-- Run locally: `python3 -m http.server 5173` from the repository root, then open http://localhost:5173. Workers and ES modules don't load from `file://`.
+- Run locally: `npm start` from the repository root, then open http://localhost:5173 (`PORT` overrides the port). Workers and ES modules don't load from `file://`.
 - Test: `npm test` (runs `node --test`).
 
 ## Conventions
