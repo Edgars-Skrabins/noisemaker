@@ -1,7 +1,7 @@
 # Start screen — Spec
 
 **Type:** feature
-**Status:** approved
+**Status:** in progress
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
@@ -102,8 +102,8 @@ Read Part 1 and Part 2 before starting. Work through the tasks in order and tick
 Baseline before starting: 73 tests passing.
 
 ### A. Pure logic
-- [ ] A1. `js/maps.js`: `startMap(template, settings)`.
-- [ ] A2. `tests/maps.test.js`: `startMap` tests as in 2.2.
+- [x] A1. `js/maps.js`: `startMap(template, settings)`.
+- [x] A2. `tests/maps.test.js`: `startMap` tests as in 2.2.
 
 ### B. Markup and styles
 - [ ] B1. `index.html`: head screen script, brand home button, `#doc-name` as `h1`, start screen, `#new-dialog`, `i-plus`.

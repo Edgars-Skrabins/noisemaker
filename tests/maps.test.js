@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
   MAPS_KEY, CURRENT_KEY, NAME_MAX, UNTITLED,
   mapSettings, isDirty, cleanName, copyName, fileSlug, formatEdited,
-  listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent,
+  listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent, startMap,
 } from '../js/maps.js';
 import { DEFAULTS } from '../js/settings.js';
 
@@ -227,4 +227,29 @@ test('current map round-trips and is sanitised', () => {
   assert.equal(cur.base.type, DEFAULTS.type);
   saveCurrent(storage, { mapId: 5, template: 'Clouds', name: '', base: null });
   assert.deepEqual(loadCurrent(storage), { mapId: null, template: 'Clouds', name: UNTITLED, base: null });
+});
+
+test('startMap gives a blank untitled map on defaults keeping the export settings', () => {
+  const settings = { ...DEFAULTS, type: 'worley', seed: 99, scale: 20, size: 2048, format: 'r16', quality: 0.7, tilePreview: true };
+  const { current, settings: out } = startMap(null, settings);
+  assert.deepEqual(out, mapSettings({ ...DEFAULTS, size: 2048, format: 'r16', quality: 0.7 }));
+  assert.equal(out.seed, DEFAULTS.seed);
+  assert.equal('tilePreview' in out, false);
+  assert.deepEqual(current, { mapId: null, template: null, name: UNTITLED, base: out });
+  assert.equal(isDirty(out, current.base), false);
+});
+
+test('startMap from a template applies its settings and name', () => {
+  const template = { name: 'Cracks', settings: { type: 'worley', cell: 'edges', scale: 6, invert: true } };
+  const settings = { ...DEFAULTS, seed: 5, size: 256, format: 'webp', quality: 0.9 };
+  const { current, settings: out } = startMap(template, settings);
+  assert.equal(out.type, 'worley');
+  assert.equal(out.cell, 'edges');
+  assert.equal(out.scale, 6);
+  assert.equal(out.invert, true);
+  assert.equal(out.seed, DEFAULTS.seed);
+  assert.equal(out.size, 256);
+  assert.equal(out.format, 'webp');
+  assert.equal(out.quality, 0.9);
+  assert.deepEqual(current, { mapId: null, template: 'Cracks', name: 'Cracks', base: out });
 });

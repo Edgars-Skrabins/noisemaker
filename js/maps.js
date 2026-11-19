@@ -177,3 +177,12 @@ export function saveCurrent(storage, current) {
     return false;
   }
 }
+
+export function startMap(template, settings) {
+  const { size, format, quality } = settings;
+  const base = mapSettings({ ...DEFAULTS, ...(template ? template.settings : {}), size, format, quality });
+  return {
+    current: { mapId: null, template: template ? template.name : null, name: template ? template.name : UNTITLED, base },
+    settings: base,
+  };
+}
