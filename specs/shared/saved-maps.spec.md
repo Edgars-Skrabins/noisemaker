@@ -1,7 +1,7 @@
 # Saved maps — Spec
 
 **Type:** feature
-**Status:** approved
+**Status:** in progress
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
@@ -114,9 +114,9 @@ Read Part 1 and Part 2 before starting. Work through the tasks in order and tick
 Baseline before starting: 53 tests passing.
 
 ### A. Saved-maps store
-- [ ] A1. `js/maps.js` with the constants and helpers `mapSettings`, `isDirty`, `cleanName`, `copyName`, `fileSlug`, `formatEdited`.
-- [ ] A2. Store functions `listMaps`, `getMap`, `createMap`, `overwriteMap`, `deleteMap`, `loadCurrent`, `saveCurrent` with quota detection.
-- [ ] A3. `tests/maps.test.js`: create (id, times, cleaned name, empty-name error), overwrite (keeps id/name/created, updates settings/updated, missing id), save-as-new next to an existing map, list order, delete (and unknown id), get, corrupt JSON and non-array data, entries with missing fields or old settings (`simplex`), storage full (`QuotaExceededError`) and unavailable storage, `isDirty` ignoring `tilePreview`, `cleanName`, `copyName`, `fileSlug`, `formatEdited`, `loadCurrent` defaults and sanitising.
+- [x] A1. `js/maps.js` with the constants and helpers `mapSettings`, `isDirty`, `cleanName`, `copyName`, `fileSlug`, `formatEdited`.
+- [x] A2. Store functions `listMaps`, `getMap`, `createMap`, `overwriteMap`, `deleteMap`, `loadCurrent`, `saveCurrent` with quota detection.
+- [x] A3. `tests/maps.test.js`: create (id, times, cleaned name, empty-name error), overwrite (keeps id/name/created, updates settings/updated, missing id), save-as-new next to an existing map, list order, delete (and unknown id), get, corrupt JSON and non-array data, entries with missing fields or old settings (`simplex`), storage full (`QuotaExceededError`) and unavailable storage, `isDirty` ignoring `tilePreview`, `cleanName`, `copyName`, `fileSlug`, `formatEdited`, `loadCurrent` defaults and sanitising.
 
 ### B. Markup and styles
 - [ ] B1. `index.html`: top bar doc title and Load map / Save buttons, new icons, the three dialogs; remove the Presets panel.
