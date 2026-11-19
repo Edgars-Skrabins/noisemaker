@@ -6,8 +6,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Noisemaker</title>
 <meta name="description" content="Generate seamlessly tileable grayscale noise maps in the browser and export them as PNG, JPG, WebP, BMP, TGA or RAW16 heightmaps.">
-<meta name="theme-color" content="#1b1b1b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23363636'/%3E%3Crect x='3' y='3' width='5' height='5' fill='%23e3e3e3'/%3E%3Crect x='8' y='3' width='5' height='5' fill='%238a8a8a'/%3E%3Crect x='3' y='8' width='5' height='5' fill='%235a5a5a'/%3E%3Crect x='8' y='8' width='5' height='5' fill='%23b8b8b8'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#1A1714">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231A1714'/%3E%3Crect x='2.5' y='2.5' width='11' height='11' fill='%23EFE7DC'/%3E%3Crect x='4' y='4' width='4' height='4' fill='%23E0E0E0'/%3E%3Crect x='8' y='4' width='4' height='4' fill='%23888888'/%3E%3Crect x='4' y='8' width='4' height='4' fill='%23555555'/%3E%3Crect x='8' y='8' width='4' height='4' fill='%23B5B5B5'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/IBMPlexSans-Regular-Latin1.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/IBMPlexMono-Regular-Latin1.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="css/style.css">
 <script src="js/boot.js"></script>
 </head>
@@ -28,69 +30,29 @@
   <symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 3.5a1 1 0 0 1 1-1h7.3l2.7 2.7v7.3a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/><path d="M5.5 2.5v3h4.5v-3M5 13.5V9.5h6v4"/></symbol>
   <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.1a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.1"/></symbol>
   <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="9" y="2.5" width="4.5" height="4.5" rx="1"/><rect x="2.5" y="9" width="4.5" height="4.5" rx="1"/><rect x="9" y="9" width="4.5" height="4.5" rx="1"/></symbol>
   <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
 </svg>
 
-<header class="topbar">
-  <div class="brand">
-    <button id="home" class="home" type="button" title="Start screen" aria-label="Noisemaker, start screen">
-      <span class="mark" aria-hidden="true"></span><span class="brand-name">Noisemaker</span>
-    </button>
-  </div>
-  <div class="doc" id="doc">
-    <h1 id="doc-name" class="doc-name" tabindex="-1">Untitled map</h1><span id="doc-dirty" class="doc-dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" hidden></span><span id="doc-note" class="doc-note">Not saved</span>
-  </div>
-  <div class="toolbar" role="toolbar" aria-label="Map actions">
-    <button id="randomize" class="tool" type="button" title="Random settings and seed">
-      <svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg><span class="tool-text">Randomize</span>
-    </button>
-    <button id="reset" class="tool" type="button" title="Restore the default settings">
-      <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span class="tool-text">Reset</span>
-    </button>
-  </div>
-  <div class="toolbar toolbar-end" role="toolbar" aria-label="File">
-    <button id="load-map" class="tool" type="button" title="Open a saved map or a template" aria-haspopup="dialog">
-      <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="tool-text">Load map</span>
-    </button>
-    <button id="save-map" class="tool" type="button" title="Save (Ctrl+S)" aria-haspopup="dialog" aria-keyshortcuts="Control+S Meta+S">
-      <svg class="icon" aria-hidden="true"><use href="#i-save"/></svg><span class="tool-text">Save</span>
-    </button>
-  </div>
-</header>
-
 <main class="workspace">
-  <section class="canvas-area" aria-label="Preview">
-    <div class="optionsbar">
-      <div class="tool-wrap">
-        <label class="tool toggle-tool" title="Tile 2×2 (T)">
-          <input type="checkbox" data-key="tilePreview" aria-labelledby="lbl-tilePreview">
-          <svg class="icon" aria-hidden="true"><use href="#i-tile"/></svg><span id="lbl-tilePreview" class="tool-text" data-help="tilePreview">Tile 2×2</span>
-        </label>
-      </div>
-      <div class="zoom" role="group" aria-label="Zoom">
-        <button id="zoom-out" class="tool icon-only" type="button" title="Zoom out (−)" aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-zoom-out"/></svg></button>
-        <output id="zoom-level" class="zoom-level" aria-live="polite" aria-label="Zoom level">100%</output>
-        <button id="zoom-in" class="tool icon-only" type="button" title="Zoom in (+)" aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-zoom-in"/></svg></button>
-        <span class="sep" aria-hidden="true"></span>
-        <button id="zoom-fit" class="tool" type="button" title="Fit to window (0)" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-fit"/></svg><span class="tool-text">Fit</span></button>
-        <button id="zoom-actual" class="tool" type="button" title="Actual pixels">100%</button>
-      </div>
+  <header class="side-head">
+    <div class="side-brand">
+      <span class="brand"><span class="mark" aria-hidden="true"></span>Noisemaker</span>
+      <button id="home" class="tool" type="button" title="Back to your maps">
+        <svg class="icon" aria-hidden="true"><use href="#i-grid"/></svg><span class="tool-text">My maps</span>
+      </button>
     </div>
-    <div class="busy" id="busy" aria-hidden="true"></div>
-    <div class="viewport" id="viewport">
-      <canvas id="view" width="512" height="512" aria-label="Noise map preview"></canvas>
+    <div class="doc" id="doc">
+      <h1 id="doc-name" class="doc-name" tabindex="-1">Untitled map</h1>
+      <span id="doc-dirty" class="doc-dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" hidden></span>
+      <span id="doc-note" class="doc-note">Not saved</span>
     </div>
-    <div class="statusbar">
-      <span id="status-state" class="status-state" role="status">Ready</span>
-      <span id="status-doc" class="status-doc"></span>
-      <span id="status-cursor" class="status-cursor"></span>
-    </div>
-  </section>
+  </header>
 
-  <aside class="dock" aria-label="Settings">
-    <details class="panel" open>
-      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Noise</summary>
-      <div class="panel-body">
+  <aside class="steps" aria-label="Settings">
+    <details class="step" name="steps" open>
+      <summary class="step-head"><span class="step-num" aria-hidden="true"></span><span class="step-title">Pattern</span><span class="step-sum" data-sum="pattern"></span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+      <div class="step-body">
         <div class="prop">
           <span class="prop-label" id="lbl-type" data-help="type">Type</span>
           <div class="segmented" role="radiogroup" aria-labelledby="lbl-type">
@@ -156,10 +118,9 @@
         </div>
       </div>
     </details>
-
-    <details class="panel" open data-show="type!=white">
-      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Fractal</summary>
-      <div class="panel-body">
+    <details class="step" name="steps" data-show="type!=white">
+      <summary class="step-head"><span class="step-num" aria-hidden="true"></span><span class="step-title">Detail</span><span class="step-sum" data-sum="detail"></span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+      <div class="step-body">
         <div class="prop">
           <span class="prop-label" id="lbl-fractal" data-help="fractal">Mode</span>
           <div class="segmented" role="radiogroup" aria-labelledby="lbl-fractal">
@@ -203,10 +164,9 @@
         </div>
       </div>
     </details>
-
-    <details class="panel" open>
-      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Adjust</summary>
-      <div class="panel-body">
+    <details class="step" name="steps">
+      <summary class="step-head"><span class="step-num" aria-hidden="true"></span><span class="step-title">Tone</span><span class="step-sum" data-sum="tone"></span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+      <div class="step-body">
         <div class="prop">
           <span class="prop-label" id="lbl-contrast" data-help="contrast">Contrast</span>
           <div class="prop-control">
@@ -246,10 +206,9 @@
         </div>
       </div>
     </details>
-
-    <details class="panel" open>
-      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Export</summary>
-      <div class="panel-body">
+    <details class="step" name="steps">
+      <summary class="step-head"><span class="step-num" aria-hidden="true"></span><span class="step-title">Export</span><span class="step-sum" data-sum="export"></span><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg></summary>
+      <div class="step-body">
         <div class="prop">
           <span class="prop-label" id="lbl-size" data-help="size">Resolution</span>
           <div class="prop-control">
@@ -287,18 +246,77 @@
           </div>
         </div>
 
-        <div class="export-actions">
+        <div class="step-actions">
           <button id="copy" class="btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copy PNG</button>
-          <button id="download" class="btn primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Export</button>
         </div>
-        <div class="progress" id="progress" hidden><span></span></div>
       </div>
     </details>
   </aside>
+
+  <footer class="side-foot">
+    <div class="progress" id="progress" hidden><span></span></div>
+    <div class="foot-actions">
+      <button id="load-map" class="btn" type="button" title="Open a saved map or a template" aria-haspopup="dialog">
+        <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="btn-text">Load map</span>
+      </button>
+      <button id="save-map" class="btn" type="button" title="Save (Ctrl+S)" aria-haspopup="dialog" aria-keyshortcuts="Control+S Meta+S">
+        <svg class="icon" aria-hidden="true"><use href="#i-save"/></svg><span class="btn-text">Save</span>
+      </button>
+      <button id="download" class="btn primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Export</button>
+    </div>
+  </footer>
+
+  <section class="stage" aria-label="Preview">
+    <div class="stage-bar">
+      <div class="toolbar" role="toolbar" aria-label="Map actions">
+        <button id="randomize" class="tool" type="button" title="Random settings and seed">
+          <svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg><span class="tool-text">Randomize</span>
+        </button>
+        <button id="reset" class="tool" type="button" title="Restore the default settings">
+          <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span class="tool-text">Reset</span>
+        </button>
+      </div>
+      <div class="toolbar toolbar-end">
+        <label class="tool toggle-tool" title="Tile 2×2 (T)">
+          <input type="checkbox" data-key="tilePreview" aria-labelledby="lbl-tilePreview">
+          <svg class="icon" aria-hidden="true"><use href="#i-tile"/></svg><span id="lbl-tilePreview" class="tool-text" data-help="tilePreview">Tile 2×2</span>
+        </label>
+        <span class="sep" aria-hidden="true"></span>
+        <div class="zoom" role="group" aria-label="Zoom">
+          <button id="zoom-out" class="tool icon-only" type="button" title="Zoom out (−)" aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-zoom-out"/></svg></button>
+          <output id="zoom-level" class="zoom-level" aria-live="polite" aria-label="Zoom level">100%</output>
+          <button id="zoom-in" class="tool icon-only" type="button" title="Zoom in (+)" aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-zoom-in"/></svg></button>
+          <button id="zoom-fit" class="tool" type="button" title="Fit to window (0)" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-fit"/></svg><span class="tool-text">Fit</span></button>
+          <button id="zoom-actual" class="tool zoom-actual" type="button" title="Actual pixels">100%</button>
+        </div>
+      </div>
+    </div>
+    <div class="busy" id="busy" aria-hidden="true"></div>
+    <div class="viewport" id="viewport">
+      <div class="print" id="print">
+        <canvas id="view" width="512" height="512" aria-label="Noise map preview"></canvas>
+      </div>
+    </div>
+    <div class="statusbar">
+      <span id="status-state" class="status-state" role="status">Ready</span>
+      <span id="status-doc" class="status-doc"></span>
+      <span id="status-cursor" class="status-cursor"></span>
+    </div>
+    <div class="sheet" role="group" aria-labelledby="sheet-title">
+      <div class="sheet-head">
+        <h2 id="sheet-title" class="micro">Contact sheet</h2>
+        <button id="shuffle" class="tool" type="button" title="Try other seeds">
+          <svg class="icon" aria-hidden="true"><use href="#i-dice"/></svg><span class="tool-text">Shuffle</span>
+        </button>
+      </div>
+      <ul class="sheet-list" id="sheet-list"></ul>
+    </div>
+  </section>
 </main>
 
 <main class="start" id="start" aria-labelledby="start-title">
   <div class="start-inner">
+    <div class="start-brand"><span class="brand"><span class="mark" aria-hidden="true"></span>Noisemaker</span></div>
     <div class="start-head">
       <h1 id="start-title" tabindex="-1">Your maps</h1>
       <span id="start-count" class="start-count"></span>
