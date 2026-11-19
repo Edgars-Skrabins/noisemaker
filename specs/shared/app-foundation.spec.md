@@ -44,7 +44,7 @@ New files at the repository root (the prototype is never edited):
   - `js/storage.js`: `loadSettings(storage)` and `saveSettings(storage, settings)` under the key `noisemaker:settings:v1`, tolerant of missing or broken storage.
 - Browser modules:
   - `js/worker.js`: module worker; receives `{ id, w, h, p }`, posts progress and the result buffer.
-  - `js/worker-client.js`: `runWorker(worker, id, w, h, p, onProgress)` and `createNoiseWorker()`.
+  - `js/worker-client.js`: `NoiseWorker` (`run(w, h, p, onProgress)`, `terminate()`) and `CancelledError`.
   - `js/exporter.js`: canvas blob encoding, `encode(format, out, size, quality)`, `download(blob, name)`.
   - `js/app.js`: UI wiring (controls, visibility rules, preview, presets, randomize, reset, export, copy, toast, shortcuts).
 - `package.json`: `"type": "module"`, `"test": "node --test"`, no dependencies.
@@ -80,6 +80,11 @@ Recorded because this sub-session runs autonomously without stopping for approva
 - A9. Auto-levels takes its min and max from the stored 32-bit values, so output is exactly within 0..1. The prototype took them from 64-bit values, which could produce tiny negatives.
 - A10. Randomize clears the active preset highlight, like Reset (the prototype left it on).
 - A11. The project `CLAUDE.md` already describes the real layout, so it is left unchanged.
+- A12. With tiling on, each octave's frequency is rounded to an integer and is at least one higher than the previous octave's, so octaves never collapse onto the same frequency and Lacunarity always has an effect (review, 2026-11-19).
+- A13. White noise is hashed in export-resolution pixel space (`size`), so the preview and preset thumbnails are a nearest-neighbour subsample of the exported map (review, 2026-11-19).
+- A14. Export and Copy PNG snapshot the settings and active preset when they start; changes made while a file renders don't affect it (review, 2026-11-19).
+- A15. Copy PNG passes a blob promise to `ClipboardItem` and calls `navigator.clipboard.write` straight away in the click handler, so Safari keeps the user activation (review, 2026-11-19).
+- A16. `js/worker-client.js` exposes a `NoiseWorker` class that tracks pending jobs and rejects them with `CancelledError` when terminated, so superseded previews never leave promises hanging (review, 2026-11-19).
 
 # Part 3 — Implementation TODO
 
