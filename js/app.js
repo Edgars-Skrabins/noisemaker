@@ -5,23 +5,23 @@ import { postProcess } from './postprocess.js';
 import { NoiseWorker, CancelledError } from './worker-client.js';
 import { canvasBlob, encode, download, formatBytes } from './exporter.js';
 import { HELP } from './help.js';
+import { setupHelp, hideTip } from './tooltip.js';
+import { matches } from './visibility.js';
 import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel, previewResolution } from './view.js';
 import { commitNumber, formatNumber } from './fields.js';
 import {
-  UNTITLED, mapSettings, isDirty, cleanName, copyName, fileSlug,
+  UNTITLED, NAME_MAX, mapSettings, isDirty, cleanName, copyName, fileSlug,
   listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent, startMap,
 } from './maps.js';
 import { openDialog, confirmDialog } from './dialogs.js';
-import { renderSavedList, renderTemplateList } from './library.js';
+import { THUMB_SIZE, renderSavedList, renderTemplateList } from './library.js';
 
 const EDITOR_HASH = '#editor';
 const BLANK = { name: 'Blank', settings: {} };
 const STARTS = [BLANK, ...PRESETS];
 
-const THUMB_SIZE = 128;
 const THUMB_QUALITY = 0.85;
 const VIEW_PAD = 24;
-const TIP_DELAY = 350;
 const SAVE_ERRORS = {
   name: 'Enter a name',
   full: 'Browser storage is full. Delete some saved maps and try again.',
@@ -64,14 +64,10 @@ let progressTimer = 0;
 let zoom = 1;
 let fitMode = true;
 let pointer = null;
-let tipButton = null;
-let tipPinned = false;
-let tipTimer = 0;
 
 const view = $('#view');
 const vctx = view.getContext('2d');
 const viewport = $('#viewport');
-const tooltip = $('#tooltip');
 const src = document.createElement('canvas');
 const sctx = src.getContext('2d');
 
@@ -95,8 +91,16 @@ function setCurrent(next) {
 function syncCurrent() {
   if (!current.mapId) return;
   const map = getMap(storage, current.mapId);
-  if (map) setCurrent({ mapId: map.id, template: null, name: map.name, base: map.settings });
-  else setCurrent({ ...current, mapId: null, template: null, base: null });
+  if (map) attachMap(map);
+  else detachCurrent();
+}
+
+function attachMap(map) {
+  setCurrent({ mapId: map.id, name: map.name, base: map.settings });
+}
+
+function detachCurrent() {
+  setCurrent({ ...current, mapId: null, base: null });
 }
 
 function updateDoc() {
@@ -139,18 +143,9 @@ function writeControls() {
   updateStatusDoc();
 }
 
-function matches(expr) {
-  return expr.split('&').every((clause) => {
-    const neg = clause.includes('!=');
-    const [k, v] = clause.split(neg ? '!=' : '=');
-    const ok = v.split('|').includes(String(state[k]));
-    return neg ? !ok : ok;
-  });
-}
-
 function updateVisibility() {
   $$('[data-show]').forEach((el) => {
-    el.hidden = !matches(el.dataset.show);
+    el.hidden = !matches(el.dataset.show, state);
   });
 }
 
@@ -172,13 +167,16 @@ function wantedRes() {
   return previewResolution(state.size, zoom, fitMode, tiles());
 }
 
+function stopPreview() {
+  if (!previewWorker) return;
+  previewWorker.terminate();
+  previewWorker = null;
+}
+
 async function regen() {
   const res = wantedRes();
   pendingRes = res;
-  if (previewBusy && previewWorker) {
-    previewWorker.terminate();
-    previewWorker = null;
-  }
+  if (previewBusy) stopPreview();
   if (!previewWorker) previewWorker = new NoiseWorker();
   const id = ++reqId;
   previewBusy = true;
@@ -409,6 +407,7 @@ function openSave() {
   syncCurrent();
   const saved = current.mapId ? getMap(storage, current.mapId) : null;
   const name = $('#save-name');
+  name.maxLength = NAME_MAX;
   $('#save-choice').hidden = !saved;
   if (saved) {
     $('#save-overwrite-text').textContent = `Overwrite “${saved.name}”`;
@@ -452,14 +451,14 @@ async function submitSave() {
     : createMap(storage, { name, settings, thumb });
   if (!res.ok) {
     if (res.error === 'missing') {
-      setCurrent({ ...current, mapId: null, template: null, base: null });
+      detachCurrent();
       $('#save-new').checked = true;
       syncSaveMode();
     }
     setSaveError(res.error);
     return;
   }
-  setCurrent({ mapId: res.map.id, template: null, name: res.map.name, base: res.map.settings });
+  attachMap(res.map);
   $('#save-dialog').close('saved');
   toast(`Saved “${res.map.name}”`);
 }
@@ -490,7 +489,7 @@ function loadTemplate(i) {
 
 function loadSaved(map) {
   const fresh = getMap(storage, map.id) || map;
-  setCurrent({ mapId: fresh.id, template: null, name: fresh.name, base: fresh.settings });
+  attachMap(fresh);
   applyMap(fresh.settings);
 }
 
@@ -520,10 +519,6 @@ async function confirmDelete(map, btn) {
     return false;
   }
   return true;
-}
-
-function detachCurrent() {
-  setCurrent({ ...current, mapId: null, template: null, base: null });
 }
 
 async function removeSaved(map, btn) {
@@ -570,7 +565,7 @@ function drawThumbs(canvases, offset) {
 function buildTemplates() {
   if (templatesBuilt) return Promise.resolve();
   templatesBuilt = true;
-  const canvases = renderTemplateList($('#template-list'), PRESETS, { size: THUMB_SIZE, onOpen: chooseTemplate });
+  const canvases = renderTemplateList($('#template-list'), PRESETS, { onOpen: chooseTemplate });
   return drawThumbs(canvases, 1).catch((err) => {
     templatesBuilt = false;
     throw err;
@@ -615,10 +610,7 @@ function clearEditor() {
   const next = startMap(null, state);
   clearTimeout(regenTimer);
   reqId++;
-  if (previewWorker) {
-    previewWorker.terminate();
-    previewWorker = null;
-  }
+  stopPreview();
   previewBusy = false;
   setBusy(false);
   state = { ...next.settings, tilePreview: state.tilePreview };
@@ -679,7 +671,7 @@ async function chooseNew(i, btn) {
 function openNew(opener) {
   if (!newBuilt) {
     newBuilt = true;
-    const canvases = renderTemplateList($('#new-list'), STARTS, { size: THUMB_SIZE, onOpen: chooseNew });
+    const canvases = renderTemplateList($('#new-list'), STARTS, { onOpen: chooseNew });
     drawThumbs(canvases, 0).catch((err) => {
       newBuilt = false;
       toast('Template thumbnails failed: ' + err.message);
@@ -700,98 +692,6 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
-function placeTip(btn) {
-  const gap = 8;
-  const r = btn.getBoundingClientRect();
-  const w = tooltip.offsetWidth;
-  const h = tooltip.offsetHeight;
-  const vw = document.documentElement.clientWidth;
-  const vh = document.documentElement.clientHeight;
-  let left = r.right + gap;
-  let top = r.top + r.height / 2 - h / 2;
-  if (left + w > vw - gap) left = (btn.closest('.dock') || btn).getBoundingClientRect().left - w - gap;
-  if (left < gap) {
-    left = Math.min(vw - w - gap, Math.max(gap, r.left + r.width / 2 - w / 2));
-    top = r.bottom + 6;
-    if (top + h > vh - gap) top = r.top - h - 6;
-  }
-  tooltip.style.left = Math.round(left) + 'px';
-  tooltip.style.top = Math.round(Math.min(vh - h - gap, Math.max(gap, top))) + 'px';
-}
-
-function showTip(btn, pinned = false) {
-  clearTimeout(tipTimer);
-  if (tipButton && tipButton !== btn) hideTip();
-  const title = document.createElement('strong');
-  title.textContent = btn.dataset.name;
-  tooltip.replaceChildren(title, document.createTextNode(HELP[btn.dataset.helpFor]));
-  tooltip.hidden = false;
-  placeTip(btn);
-  btn.setAttribute('aria-describedby', 'tooltip');
-  btn.classList.add('open');
-  tipButton = btn;
-  tipPinned = pinned;
-}
-
-function hideTip() {
-  clearTimeout(tipTimer);
-  if (!tipButton) return;
-  tipButton.removeAttribute('aria-describedby');
-  tipButton.classList.remove('open');
-  tooltip.hidden = true;
-  tipButton = null;
-  tipPinned = false;
-}
-
-function setupHelp() {
-  $$('[data-help]').forEach((el) => {
-    const key = el.dataset.help;
-    const name = el.textContent.trim();
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'info';
-    btn.dataset.helpFor = key;
-    btn.dataset.name = name;
-    btn.setAttribute('aria-label', `About ${name}`);
-    btn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>';
-    if (el.classList.contains('prop-label')) {
-      const text = document.createElement('span');
-      text.id = el.id;
-      text.textContent = name;
-      el.removeAttribute('id');
-      el.replaceChildren(text, btn);
-    } else {
-      (el.closest('label') || el).after(btn);
-    }
-    btn.addEventListener('pointerenter', (e) => {
-      if (e.pointerType !== 'mouse' || tipPinned) return;
-      clearTimeout(tipTimer);
-      tipTimer = setTimeout(() => showTip(btn), TIP_DELAY);
-    });
-    btn.addEventListener('pointerleave', () => {
-      clearTimeout(tipTimer);
-      if (tipButton === btn && !tipPinned) hideTip();
-    });
-    btn.addEventListener('focus', () => {
-      if (btn.matches(':focus-visible')) showTip(btn);
-    });
-    btn.addEventListener('blur', () => {
-      if (tipButton === btn) hideTip();
-    });
-    btn.addEventListener('click', () => {
-      if (tipButton === btn && tipPinned) hideTip();
-      else showTip(btn, true);
-    });
-  });
-
-  document.addEventListener('pointerdown', (e) => {
-    if (tipButton && !e.target.closest('.info')) hideTip();
-  });
-  $('.dock').addEventListener('scroll', hideTip, { passive: true });
-  window.addEventListener('resize', hideTip);
-  window.addEventListener('scroll', hideTip, { passive: true });
-}
-
 function rangeFor(num) {
   return $(`input[type="range"][data-key="${num.dataset.num}"]`);
 }
@@ -807,7 +707,7 @@ function commitField(num, text = num.value) {
   if (changed) onChange(key);
 }
 
-function bind() {
+function bindFields() {
   $$('[data-key]').forEach((el) => {
     const ev = el.type === 'range' || el.type === 'number' ? 'input' : 'change';
     el.addEventListener(ev, () => {
@@ -836,7 +736,9 @@ function bind() {
     });
     num.addEventListener('focus', () => num.select());
   });
+}
 
+function bindDocument() {
   $('#reseed').addEventListener('click', () => setState({ seed: newSeed() }));
   $('#randomize').addEventListener('click', () => setState(randomize()));
   $('#reset').addEventListener('click', () => setState({ ...DEFAULTS }));
@@ -857,6 +759,11 @@ function bind() {
       setHash('start');
     }
   });
+  $('#download').addEventListener('click', doExport);
+  $('#copy').addEventListener('click', doCopy);
+}
+
+function bindDialogs() {
   $('#load-map').addEventListener('click', openLoad);
   $('#save-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -874,9 +781,9 @@ function bind() {
       selectTab(toSaved ? 'saved' : 'templates', true);
     }
   });
-  $('#download').addEventListener('click', doExport);
-  $('#copy').addEventListener('click', doCopy);
+}
 
+function bindZoom() {
   $('#zoom-in').addEventListener('click', () => setZoom(zoomIn(zoom)));
   $('#zoom-out').addEventListener('click', () => setZoom(zoomOut(zoom)));
   $('#zoom-fit').addEventListener('click', fit);
@@ -892,7 +799,9 @@ function bind() {
     updateCursor();
   });
   viewport.addEventListener('scroll', () => { if (pointer) updateCursor(); }, { passive: true });
+}
 
+function bindShortcuts() {
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
       e.preventDefault();
@@ -900,10 +809,7 @@ function bind() {
       return;
     }
     if (dialogOpen() || screen !== 'editor') return;
-    if (e.key === 'Escape' && tipButton) {
-      hideTip();
-      return;
-    }
+    if (e.key === 'Escape' && hideTip()) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' && e.target.type !== 'range' && e.target.type !== 'checkbox' && e.target.type !== 'radio') return;
@@ -919,10 +825,14 @@ function bind() {
   });
 }
 
-setupHelp();
+setupHelp(HELP, { tip: $('#tooltip'), scrollers: [$('.dock')] });
 syncCurrent();
 writeControls();
 updateDoc();
-bind();
+bindFields();
+bindDocument();
+bindDialogs();
+bindZoom();
+bindShortcuts();
 updateCursor();
 showScreen(screen, { focus: false });
