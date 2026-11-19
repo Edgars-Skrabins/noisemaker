@@ -17,7 +17,7 @@ export const HELP = Object.freeze({
   invert: 'Swaps black and white, so peaks become valleys and cell centres become edges.',
   normalize: 'Stretches the values so the darkest point is pure black and the brightest pure white, using the full range.',
   tilePreview: 'Shows the map repeated 2 × 2 to check the seams. Only changes the preview, not the export. Shortcut: T.',
-  size: 'Width and height of the exported file in pixels. The preview renders at up to 512 pixels.',
+  size: 'Width and height of the exported file in pixels. The preview renders at up to 512 pixels when fitted to the window and sharpens to full resolution when zoomed in.',
   format: 'File type of the export. PNG is lossless, JPG and WebP are smaller but lossy, BMP and TGA suit older tools, RAW16 is a 16-bit heightmap for terrain engines.',
   quality: 'Compression quality for JPG, JPEG and WebP. Lower values give smaller files with more visible artefacts.',
 });
