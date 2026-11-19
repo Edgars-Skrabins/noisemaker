@@ -106,13 +106,13 @@ Baseline before starting: 73 tests passing.
 - [x] A2. `tests/maps.test.js`: `startMap` tests as in 2.2.
 
 ### B. Markup and styles
-- [ ] B1. `index.html`: head screen script, brand home button, `#doc-name` as `h1`, start screen, `#new-dialog`, `i-plus`.
-- [ ] B2. `css/style.css`: screen switch, `.home`, start screen, empty state, `--card-gap`, narrow layout.
+- [x] B1. `index.html`: head screen script, brand home button, `#doc-name` as `h1`, start screen, `#new-dialog`, `i-plus`.
+- [x] B2. `css/style.css`: screen switch, `.home`, start screen, empty state, `--card-gap`, narrow layout.
 
 ### C. Wiring
-- [ ] C1. `js/app.js`: `screen` state, `showScreen`, `layout` guard, startup on either screen, title handling, `hashchange`, keyboard guards.
-- [ ] C2. `js/app.js`: `renderStart`, opening and deleting saved maps on the start screen, `clearEditor`, `goHome` with the discard prompt.
-- [ ] C3. `js/app.js`: New map dialog, shared template thumbnail cache, `loadTemplate` through `startMap`.
+- [x] C1. `js/app.js`: `screen` state, `showScreen`, `layout` guard, startup on either screen, title handling, `hashchange`, keyboard guards.
+- [x] C2. `js/app.js`: `renderStart`, opening and deleting saved maps on the start screen, `clearEditor`, `goHome` with the discard prompt.
+- [x] C3. `js/app.js`: New map dialog, shared template thumbnail cache, `loadTemplate` through `startMap`.
 
 ### D. Docs
 - [ ] D1. Update `README.md`, `CLAUDE.md`, `DESIGN.md` and `PRODUCT.md` as in 2.2.
