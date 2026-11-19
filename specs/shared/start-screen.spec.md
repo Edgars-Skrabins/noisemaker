@@ -117,6 +117,9 @@ Baseline before starting: 73 tests passing.
 ### D. Docs
 - [x] D1. Update `README.md`, `CLAUDE.md`, `DESIGN.md` and `PRODUCT.md` as in 2.2.
 
+### E. Review fixes
+- [x] E1. `clearEditor()` drops any pending or running preview render (clears the timer, bumps the request id, terminates the busy worker), so a render of the discarded map can't land after the reset (review, 2026-11-19).
+
 ### Z. Wrap-up
 - [x] Z1. `npm test` passes.
 - [x] Z2. Manual check via `python3 -m http.server 5173`: first-run empty state, new blank map, new from template, open saved, delete (including the map the editor holds), back to start with and without unsaved changes (cancel and discard), discard prompt for unsaved work found on the start screen, reload on both screens, typed hash, Load map and Save still working, keyboard use, narrow width, no console errors.

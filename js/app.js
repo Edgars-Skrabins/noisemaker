@@ -597,6 +597,14 @@ function showScreen(name, { focus = true } = {}) {
 
 function clearEditor() {
   const next = startMap(null, state);
+  clearTimeout(regenTimer);
+  reqId++;
+  if (previewWorker) {
+    previewWorker.terminate();
+    previewWorker = null;
+  }
+  previewBusy = false;
+  setBusy(false);
   state = { ...next.settings, tilePreview: state.tilePreview };
   last = null;
   lastOut = null;
