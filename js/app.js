@@ -5,10 +5,9 @@ import { postProcess } from './postprocess.js';
 import { NoiseWorker, CancelledError } from './worker-client.js';
 import { canvasBlob, encode, download, formatBytes } from './exporter.js';
 import { HELP } from './help.js';
-import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel } from './view.js';
+import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel, previewResolution } from './view.js';
 import { commitNumber, formatNumber } from './fields.js';
 
-const PREVIEW_MAX = 512;
 const THUMB_SIZE = 72;
 const VIEW_PAD = 24;
 const TIP_DELAY = 350;
@@ -29,6 +28,7 @@ const storage = browserStorage();
 let state = loadSettings(storage);
 let previewWorker = null;
 let previewBusy = false;
+let pendingRes = 0;
 let reqId = 0;
 let last = null;
 let lastOut = null;
@@ -122,8 +122,13 @@ function scheduleRegen() {
   regenTimer = setTimeout(regen, 25);
 }
 
+function wantedRes() {
+  return previewResolution(state.size, zoom, fitMode, tiles());
+}
+
 async function regen() {
-  const res = Math.min(state.size, PREVIEW_MAX);
+  const res = wantedRes();
+  pendingRes = res;
   if (previewBusy && previewWorker) {
     previewWorker.terminate();
     previewWorker = null;
@@ -174,9 +179,11 @@ function layout() {
   const px = Math.max(1, Math.round(doc * zoom));
   view.style.width = px + 'px';
   view.style.height = px + 'px';
-  view.classList.toggle('pixelated', state.size <= PREVIEW_MAX && zoom > 1);
+  view.classList.toggle('pixelated', !!last && last.res === state.size && zoom > 1);
   $('#zoom-level').textContent = formatZoom(zoom);
   $('#zoom-fit').setAttribute('aria-pressed', String(fitMode));
+  const have = previewBusy ? pendingRes : last && last.res;
+  if ((previewBusy || last) && wantedRes() !== have) scheduleRegen();
 }
 
 function setZoom(z) {
@@ -206,7 +213,8 @@ function updateCursor() {
   }
   const { res, height } = lastOut;
   const v = height[Math.floor((p.y * res) / size) * res + Math.floor((p.x * res) / size)];
-  out.textContent = `X ${p.x}   Y ${p.y}   Value ${v.toFixed(3)} · ${Math.round(v * 255)}`;
+  const approx = res < size ? '≈' : '';
+  out.textContent = `X ${p.x}   Y ${p.y}   Value ${approx}${v.toFixed(3)} · ${approx}${Math.round(v * 255)}`;
 }
 
 function onChange(key) {
