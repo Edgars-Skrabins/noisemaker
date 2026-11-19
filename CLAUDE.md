@@ -14,6 +14,7 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 - `tests/`: Node tests for the pure logic (noise engine, post-processing, encoders, storage).
 - `prototype/`: the original single-page prototype. Reference only, never edited and not part of the app.
 - `specs/`: feature and bug-fix specs.
+- `PRODUCT.md` and `DESIGN.md`: product context and the design system. New UI reuses the `DESIGN.md` tokens and components.
 
 Keep pure logic (noise math, image post-processing, file encoders, storage) in modules with no DOM access so it can be tested under Node. UI modules wire that logic to the DOM.
 
@@ -25,6 +26,7 @@ Keep pure logic (noise math, image post-processing, file encoders, storage) in m
 - No comments in code.
 - Every setting must work with seamless tiling; options that can't tile are not offered.
 - Output maps are grayscale only (black to white).
+- Every setting control (`data-key`) has a label with `data-help` and a help text in `js/help.js`; `tests/help.test.js` enforces it.
 
 ## Specs
 - Specs live in `specs/shared/` (committed). `specs/personal/` (gitignored) is only used when asked.

@@ -104,12 +104,12 @@ Baseline before starting: 33 tests passing.
 - [x] B3. Update `js/app.js`: info buttons and tooltip, numeric fields, zoom and fit with ResizeObserver, status bar and cursor readout, render bar; remove `formatValue` and outputs.
 
 ### C. Design review
-- [ ] C1. Verify in the browser at desktop (1440×900) and narrow (390 wide) widths: every panel, every type's conditional rows, tooltips by hover/focus/click, numeric commits, zoom, tile, presets, export and copy, no console errors.
+- [x] C1. Verify in the browser at desktop (1440×900) and narrow (390 wide) widths: every panel, every type's conditional rows, tooltips by hover/focus/click, numeric commits, zoom, tile, presets, export and copy, no console errors.
 - [ ] C2. Run the impeccable detector on the changed files, then a critique/polish pass (fresh finish review) and fix what holds.
 
 ### D. Docs
-- [ ] D1. `PRODUCT.md` and `DESIGN.md` at the repository root.
-- [ ] D2. Update `README.md` and `CLAUDE.md` for the new modules and docs.
+- [x] D1. `PRODUCT.md` and `DESIGN.md` at the repository root.
+- [x] D2. Update `README.md` and `CLAUDE.md` for the new modules and docs.
 
 ### Z. Wrap-up
 - [ ] Z1. `npm test` passes.
