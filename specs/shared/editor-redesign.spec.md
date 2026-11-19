@@ -1,7 +1,7 @@
 # Editor redesign — Spec
 
 **Type:** feature
-**Status:** approved
+**Status:** in progress
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
@@ -42,7 +42,7 @@ Plain HTML, CSS and ES modules as before. No new dependencies. The Google Fonts 
   - `<header class="topbar">`: brand (`.brand` with a small square mark and "Noisemaker"), then a toolbar with Randomize (`#randomize`) and Reset (`#reset`) icon+label buttons.
   - `<main class="workspace">` grid: `.canvas-area` (options bar `.optionsbar` with the Tile 2×2 toggle and zoom group `#zoom-out`, `#zoom-level`, `#zoom-in`, `#zoom-fit`, `#zoom-actual`; `.viewport#viewport` containing `#view`; an indeterminate render bar `#busy`; status bar `.statusbar` with `#status-state`, `#status-doc`, `#status-cursor`), and `<aside class="dock">` with panels.
   - Each panel is `<details class="panel" open>` with `<summary class="panel-head">` (name and chevron) and `.panel-body`. Panels: Presets (`#presets` grid), Noise, Fractal (keeps `data-show="type!=white"`), Adjust, Export.
-  - Each property row: `<div class="prop">` with `<span class="prop-label" id="lbl-<key>" data-help="<key>">Name</span>` and the control(s) labelled with `aria-labelledby`. Sliders are followed by `<input type="number" class="num" data-num="<key>">` with the slider's min, max and step. Checkbox rows wrap the checkbox and its text in a `<label>`; the help key is on that row's text span. Segmented groups are `role="radiogroup"` labelled by their prop label.
+  - Each property row: `<div class="prop">` with `<span class="prop-label" id="lbl-<key>" data-help="<key>">Name</span>` and the control(s) labelled with `aria-labelledby`. Sliders are followed by `<input type="text" class="num" data-num="<key>" inputmode="decimal">` (no inputmode on Brightness, which needs a minus sign) that reads min, max and step from its slider. Checkbox rows wrap the checkbox and its text in a `<label>`; the help key is on that row's text span. Segmented groups are `role="radiogroup"` labelled by their prop label.
   - `<output data-for>` elements are removed (the numeric fields replace them).
   - `#tooltip` (`role="tooltip"`, hidden) at the end of `<body>`, plus the existing `#toast`.
 - `css/style.css`: rewritten. Tokens on `:root` (see 2.3 D3–D6), dark `color-scheme`, themed focus ring, selection, scrollbars, range thumbs/tracks, number fields, selects, checkboxes, segmented buttons, toolbar buttons, panel headers, tooltip, toast, render bar, responsive stacking below 760 px.
@@ -63,7 +63,7 @@ Plain HTML, CSS and ES modules as before. No new dependencies. The Google Fonts 
 1. Direction: a Photoshop-like professional editor (user). Dense, dark, neutral gray, docked panels, one accent. Rejected: keeping the gradient look and polishing it.
 2. Help texts as data in `js/help.js`, with a test that every setting has one (user/overseer).
 3. Ground and chrome are achromatic grays (no blue or warm tint), because users judge grayscale maps by eye and a tinted surround shifts perceived values.
-4. Palette tokens: app ground `#1b1b1b`, workspace pasteboard `#222222`, panels `#2b2b2b`, panel headers and bars `#252525`, raised controls `#363636` (hover `#404040`), field wells `#1c1c1c`, borders `#3a3a3a` / strong `#4a4a4a`, text `#e3e3e3`, secondary text `#a6a6a6`, tertiary `#8a8a8a` (only for 11 px+ meta on dark panels, ≥4.5:1), accent `#3b8ced` (Photoshop-like blue), accent hover `#5aa0f2`, accent text on accent `#ffffff`, error `#e5534b`.
+4. Palette tokens: app ground `#1b1b1b`, workspace pasteboard `#222222`, panels `#2b2b2b`, panel headers and bars `#252525`, raised controls `#363636` (hover `#404040`), field wells `#1c1c1c`, borders `#3a3a3a` / strong `#4a4a4a`, chrome edges `#141414`, text `#e3e3e3`, secondary text `#a6a6a6`, tertiary `#8a8a8a` (icons only, 4.1:1 on panels), accent `#3b8ced` (Photoshop-like blue) for focus rings, checkmarks, selection outlines and bars, and a deeper accent fill `#2a6ccf` (hover `#2a74d6`, active `#2168cc`) behind white text on the primary button so it stays above 4.5:1.
 5. Type: system UI stack (`system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`), 12 px base for property rows, 11 px for panel headers (semibold, not uppercase) and status bar, 13 px for the brand; `font-variant-numeric: tabular-nums` on numeric fields and readouts. No Google Fonts.
 6. Shape and depth: radius 3 px on controls, 2 px on segmented buttons, 0 on panels; elevation by 1 px borders only, a soft shadow only on the canvas, tooltip and toast.
 7. Panels are `<details>`/`<summary>` for native accessible collapsing. Collapsed state is not persisted (later specs may add it).
@@ -78,12 +78,14 @@ Recorded because this sub-session runs autonomously without stopping for approva
 - A2. No File/Edit/View dropdown menus; a toolbar is enough for the current actions and avoids a non-functional menu. Later specs can add Save and Load map to the top bar's right side.
 - A3. Cursor readout and zoom are added as cheap workspace conveniences; the readout shows the export-pixel coordinate (preview pixel × size / preview resolution) and the preview's processed value at that pixel.
 - A4. Zoom shortcuts `+`/`=`, `-` and `0`, following the existing single-key shortcut style (R, T). Fit is the default on load and after Fit; any other zoom action leaves fit mode.
-- A5. Canvas uses `image-rendering: pixelated` when one preview pixel covers more than one CSS pixel, so zooming in shows actual pixels rather than blur.
+- A5. Canvas uses `image-rendering: pixelated` only when the preview has the full export resolution (size ≤ 512) and the zoom is above 100%, so zooming in shows actual pixels; larger exports stay smoothly scaled because their preview is a downsampled stand-in.
 - A6. The render indicator becomes a thin indeterminate bar at the top of the canvas area plus the "Rendering…" status text, instead of a spinner over the image.
 - A7. Preset thumbnails stay 72 px canvases drawn at a smaller display size in a 5-column grid with names below; the highlight is an accent outline.
 - A8. Narrow layout below 760 px stacks the canvas area (55vh tall) above the dock; the page scrolls instead of the dock.
 - A9. The impeccable skill's interview and concept-roll steps are replaced by the brief, which pins the direction (Photoshop-like, neutral dark, single accent); the build is code-led with no generated comps. `PRODUCT.md` is written from the README, the specs and the brief, with inferred facts labelled.
 - A10. Help text tone: plain, second person, at most two sentences, says what the setting does and what higher/lower values look like.
+- A11. Numeric fields are text inputs, not `type="number"`, so they always show `.` decimals regardless of browser locale and accept both `.` and `,`; ArrowUp/ArrowDown step by the slider step (×10 with Shift), Escape reverts.
+- A12. In the dock the tooltip opens to the left of the dock, so it never covers the setting it explains; when there's no room (narrow layout) it opens below the button. It closes when the dock or page scrolls.
 
 # Part 3 — Implementation TODO
 
@@ -92,14 +94,14 @@ Read Part 1 and Part 2 before starting. Work through the tasks in order and tick
 Baseline before starting: 33 tests passing.
 
 ### A. Pure logic
-- [ ] A1. `js/help.js` with `HELP` texts for every setting key; `tests/help.test.js` checks coverage against `index.html` (after B1) and `DEFAULTS`.
-- [ ] A2. `js/view.js` with `ZOOM_STEPS`, `fitZoom`, `zoomIn`, `zoomOut`, `formatZoom`, `pointerToPixel`; tests in `tests/view.test.js`.
-- [ ] A3. `js/fields.js` with `decimalsFor`, `commitNumber`, `formatNumber`; tests in `tests/fields.test.js`.
+- [x] A1. `js/help.js` with `HELP` texts for every setting key; `tests/help.test.js` checks coverage against `index.html` (after B1) and `DEFAULTS`.
+- [x] A2. `js/view.js` with `ZOOM_STEPS`, `fitZoom`, `zoomIn`, `zoomOut`, `formatZoom`, `pointerToPixel`; tests in `tests/view.test.js`.
+- [x] A3. `js/fields.js` with `decimalsFor`, `commitNumber`, `formatNumber`; tests in `tests/fields.test.js`.
 
 ### B. Editor shell
-- [ ] B1. Rewrite `index.html` with the top bar, workspace, options bar, viewport, status bar, dock panels, property rows, numeric fields, icon sprite and tooltip; drop the Google Fonts links and replace the favicon with a neutral one.
-- [ ] B2. Rewrite `css/style.css` with the tokens and components in 2.3, including focus, hover, active, disabled, selection, scrollbars and the narrow layout.
-- [ ] B3. Update `js/app.js`: info buttons and tooltip, numeric fields, zoom and fit with ResizeObserver, status bar and cursor readout, render bar; remove `formatValue` and outputs.
+- [x] B1. Rewrite `index.html` with the top bar, workspace, options bar, viewport, status bar, dock panels, property rows, numeric fields, icon sprite and tooltip; drop the Google Fonts links and replace the favicon with a neutral one.
+- [x] B2. Rewrite `css/style.css` with the tokens and components in 2.3, including focus, hover, active, disabled, selection, scrollbars and the narrow layout.
+- [x] B3. Update `js/app.js`: info buttons and tooltip, numeric fields, zoom and fit with ResizeObserver, status bar and cursor readout, render bar; remove `formatValue` and outputs.
 
 ### C. Design review
 - [ ] C1. Verify in the browser at desktop (1440×900) and narrow (390 wide) widths: every panel, every type's conditional rows, tooltips by hover/focus/click, numeric commits, zoom, tile, presets, export and copy, no console errors.
