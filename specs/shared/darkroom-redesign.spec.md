@@ -1,7 +1,7 @@
 # Darkroom redesign — Spec
 
 **Type:** feature
-**Status:** approved
+**Status:** in progress
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
@@ -80,6 +80,8 @@ Plain HTML, CSS and ES modules as today. New self-hosted fonts in `fonts/`: IBM 
 7. Contact sheet: four frames including the current seed; seeds aren't stored; frames render at 160 px after the main preview so they never slow it down.
 8. The chrome is deliberately warm (the user's choice); the map itself stays grayscale and the cream mat gives a light neutral frame to judge values against. DESIGN.md records this instead of the old "achromatic chrome" rule.
 9. The spec was written and implemented without an approval round, as the user asked for autonomous work with safe assumptions.
+10. (2026-11-19, during implementation) On phones the stage toolbar is a two-row grid: Randomize, Reset and Tile 2×2 on top, the zoom controls spread across the second row. With 44 px touch targets one row doesn't fit 375 px, and hiding "100%" would drop a feature.
+11. (2026-11-19, during implementation) Dialogs lose their border and keep only the shadow, and micro-labels are 11 px, following the impeccable detector (no border-plus-wide-shadow, no functional text below 11 px). The busy sweep stays as the one looping animation because it marks rendering.
 
 # Part 3 — Implementation TODO
 
@@ -88,27 +90,27 @@ Read Part 1 and Part 2 before starting. Work through the tasks in order and tick
 Baseline before starting: 85 tests, all passing.
 
 ### A. Pure modules
-- [ ] A1. Add `js/summary.js` and `tests/summary.test.js`.
-- [ ] A2. Add `js/sheet.js` and `tests/sheet.test.js`.
+- [x] A1. Add `js/summary.js` and `tests/summary.test.js`.
+- [x] A2. Add `js/sheet.js` and `tests/sheet.test.js`.
 
 ### B. Fonts and markup
-- [ ] B1. Add the woff2 files and `fonts/LICENSE.txt` in `fonts/`.
-- [ ] B2. Restructure `index.html` (side head, steps, footer, stage with print and contact sheet, start brand, icons, preloads, favicon, theme colour).
-- [ ] B3. Update `tests/html.test.js` for the steps and font files.
+- [x] B1. Add the woff2 files and `fonts/LICENSE.txt` in `fonts/`.
+- [x] B2. Restructure `index.html` (side head, steps, footer, stage with print and contact sheet, start brand, icons, preloads, favicon, theme colour).
+- [x] B3. Update `tests/html.test.js` for the steps and font files.
 
 ### C. Styles
-- [ ] C1. Rewrite `css/style.css` on the Darkroom tokens for the editor, start screen, dialogs, tooltip and toast.
-- [ ] C2. Responsive and touch: tablet, phone single column with sticky footer, `pointer: coarse` targets, reduced motion.
+- [x] C1. Rewrite `css/style.css` on the Darkroom tokens for the editor, start screen, dialogs, tooltip and toast.
+- [x] C2. Responsive and touch: tablet, phone single column with sticky footer, `pointer: coarse` targets, reduced motion.
 
 ### D. Behaviour
-- [ ] D1. `js/app.js`: summaries, mat-aware fit, `#home` handling.
-- [ ] D2. `js/app.js`: contact sheet rendering, frame clicks, Shuffle, seed sync.
-- [ ] D3. `js/tooltip.js`: placement beside the sidebar and the scroller.
+- [x] D1. `js/app.js`: summaries, mat-aware fit, `#home` handling.
+- [x] D2. `js/app.js`: contact sheet rendering, frame clicks, Shuffle, seed sync.
+- [x] D3. `js/tooltip.js`: placement beside the sidebar and the scroller.
 
 ### E. Docs
-- [ ] E1. Replace `DESIGN.md`; update `PRODUCT.md`, `README.md`, `CLAUDE.md`.
+- [x] E1. Replace `DESIGN.md`; update `PRODUCT.md`, `README.md`, `CLAUDE.md`.
 
 ### Z. Wrap-up
-- [ ] Z1. `npm test`.
-- [ ] Z2. Manual check in the running app at desktop, tablet and phone widths: start screen, New map from a template, change settings in each step and watch the summaries, adopt a contact-sheet seed, Shuffle, Tile 2×2, zoom, tooltip, Save, Load map, Export, back to My maps with the unsaved prompt; no console or CSP errors.
-- [ ] Z3. Run the impeccable detector over the changed UI files and fix what holds.
+- [x] Z1. `npm test`.
+- [x] Z2. Manual check in the running app at desktop, tablet and phone widths: start screen, New map from a template, change settings in each step and watch the summaries, adopt a contact-sheet seed, Shuffle, Tile 2×2, zoom, tooltip, Save, Load map, Export, back to My maps with the unsaved prompt; no console or CSP errors.
+- [x] Z3. Run the impeccable detector over the changed UI files and fix what holds.
