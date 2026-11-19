@@ -41,9 +41,10 @@ export function formatEdited(ts, now = Date.now()) {
   if (diff < MINUTE) return 'just now';
   if (diff < HOUR) return `${Math.floor(diff / MINUTE)} min ago`;
   if (diff < DAY) return `${Math.floor(diff / HOUR)} h ago`;
-  const day = new Date(now);
-  day.setHours(0, 0, 0, 0);
-  if (ts >= day.getTime() - DAY) return 'yesterday';
+  const yesterday = new Date(now);
+  yesterday.setHours(0, 0, 0, 0);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (ts >= yesterday.getTime()) return 'yesterday';
   return 'on ' + new Date(ts).toLocaleDateString();
 }
 

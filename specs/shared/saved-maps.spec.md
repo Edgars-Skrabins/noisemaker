@@ -50,7 +50,7 @@ Plain HTML, CSS and ES modules as before; native `<dialog>` with `showModal()` f
 - `cleanName(raw)`: string, trimmed, whitespace collapsed, cut to `NAME_MAX`; `''` when nothing is left.
 - `copyName(name)`: `cleanName(name + ' copy')`, cutting the original so " copy" fits.
 - `fileSlug(name)`: lowercase, runs of non `[a-z0-9]` → `_`, trimmed of `_`.
-- `formatEdited(ts, now)`: "just now" (< 1 min), "N min ago" (< 1 h), "N h ago" (< 24 h), "yesterday" (previous calendar day), else "on " + `new Date(ts).toLocaleDateString()`; shown after "Edited ".
+- `formatEdited(ts, now)`: "just now" (< 1 min), "N min ago" (< 1 h), "N h ago" (< 24 h), "yesterday" (previous calendar day, also across daylight saving changes), else "on " + `new Date(ts).toLocaleDateString()`; shown after "Edited ".
 - `listMaps(storage)`: cleaned saved maps sorted as in the rules; `[]` on missing, unreadable or non-array data.
 - `getMap(storage, id)`: the cleaned map or `null`.
 - `createMap(storage, { name, settings, thumb }, { now = Date.now(), makeId })`: `{ ok: true, map }` or `{ ok: false, error }` with `error` one of `'name'` (empty after cleaning), `'full'` (quota exceeded), `'unavailable'` (storage missing or throwing otherwise). `makeId` defaults to `crypto.randomUUID()` with a time+random fallback.
@@ -130,6 +130,10 @@ Baseline before starting: 53 tests passing.
 
 ### D. Docs
 - [x] D1. Update `README.md`, `CLAUDE.md`, `PRODUCT.md` and `DESIGN.md` as in 2.2.
+
+### E. Review fixes
+- [x] E1. Build the template thumbnails the first time Load map opens instead of at page load (review, 2026-11-19).
+- [x] E2. `formatEdited` finds yesterday by calendar day, so it is right across daylight saving changes; test added (review, 2026-11-19).
 
 ### Z. Wrap-up
 - [x] Z1. `npm test` passes.

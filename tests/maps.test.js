@@ -1,3 +1,5 @@
+process.env.TZ = 'Europe/Riga';
+
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -196,6 +198,15 @@ test('formatEdited describes recent and older edits', () => {
   assert.equal(formatEdited(new Date(2026, 10, 18, 9, 0).getTime(), now), 'yesterday');
   const older = new Date(2026, 10, 10, 12, 0).getTime();
   assert.equal(formatEdited(older, now), 'on ' + new Date(older).toLocaleDateString());
+});
+
+test('yesterday follows calendar days across a daylight saving change', () => {
+  const now = new Date(2026, 9, 26, 0, 30).getTime();
+  const lateYesterday = new Date(2026, 9, 25, 0, 30).getTime();
+  assert.equal(now - lateYesterday, 25 * 3600000);
+  assert.equal(formatEdited(lateYesterday, now), 'yesterday');
+  const twoDaysAgo = new Date(2026, 9, 24, 23, 0).getTime();
+  assert.equal(formatEdited(twoDaysAgo, now), 'on ' + new Date(twoDaysAgo).toLocaleDateString());
 });
 
 test('loadCurrent gives a blank untitled map by default and on bad data', () => {
