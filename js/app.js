@@ -53,7 +53,7 @@ let lastOut = null;
 let regenTimer = 0;
 let current = loadCurrent(storage);
 let saving = false;
-let saveWorker = null;
+let saveJob = null;
 let storageWarned = false;
 let templatesBuilt = false;
 let newBuilt = false;
@@ -74,7 +74,7 @@ const sctx = src.getContext('2d');
 function warnStorage(ok) {
   if (ok || storageWarned || !storage) return;
   storageWarned = true;
-  toast('Browser storage is full. Changes won\'t survive a reload.');
+  toast('Couldn\'t save to browser storage. Changes won\'t survive a reload.');
 }
 
 function persist() {
@@ -361,9 +361,7 @@ async function thumbImage(worker, settings) {
   return new ImageData(postProcess(data, THUMB_SIZE, THUMB_SIZE, settings).rgba, THUMB_SIZE, THUMB_SIZE);
 }
 
-async function thumbnail(settings) {
-  const worker = new NoiseWorker();
-  saveWorker = worker;
+async function thumbnail(worker, settings) {
   try {
     const canvas = document.createElement('canvas');
     canvas.width = THUMB_SIZE;
@@ -372,12 +370,11 @@ async function thumbnail(settings) {
     return canvas.toDataURL('image/jpeg', THUMB_QUALITY);
   } finally {
     worker.terminate();
-    if (saveWorker === worker) saveWorker = null;
   }
 }
 
 function cancelSave() {
-  if (saveWorker) saveWorker.terminate();
+  if (saveJob) saveJob.terminate();
 }
 
 function commitFocusedField() {
@@ -407,7 +404,6 @@ function openSave() {
   syncCurrent();
   const saved = current.mapId ? getMap(storage, current.mapId) : null;
   const name = $('#save-name');
-  name.maxLength = NAME_MAX;
   $('#save-choice').hidden = !saved;
   if (saved) {
     $('#save-overwrite-text').textContent = `Overwrite “${saved.name}”`;
@@ -435,13 +431,16 @@ async function submitSave() {
   const settings = mapSettings(state);
   saving = true;
   $('#save-submit').disabled = true;
+  const worker = new NoiseWorker();
+  saveJob = worker;
   let thumb;
   try {
-    thumb = await thumbnail(settings);
+    thumb = await thumbnail(worker, settings);
   } catch (err) {
     if (!(err instanceof CancelledError)) setSaveError('thumb', err.message);
     return;
   } finally {
+    if (saveJob === worker) saveJob = null;
     saving = false;
     $('#save-submit').disabled = false;
   }
@@ -458,9 +457,9 @@ async function submitSave() {
     setSaveError(res.error);
     return;
   }
-  attachMap(res.map);
   $('#save-dialog').close('saved');
   toast(`Saved “${res.map.name}”`);
+  attachMap(res.map);
 }
 
 async function confirmDiscard(opener) {
@@ -826,6 +825,7 @@ function bindShortcuts() {
 }
 
 setupHelp(HELP, { tip: $('#tooltip'), scrollers: [$('.dock')] });
+$('#save-name').maxLength = NAME_MAX;
 syncCurrent();
 writeControls();
 updateDoc();

@@ -13,7 +13,7 @@ A full review of the app after the four feature specs found no exploitable secur
   1. Changing the URL hash (typing or removing `#editor`) while a dialog is open does nothing: the hash is put back and the dialog stays. Previously the screen switched underneath the dialog, and with a confirm already open, one "Discard" could resolve two prompts and wipe the map just loaded.
   2. A save that fails because the thumbnail couldn't be rendered says "Couldn't render the thumbnail: <reason>" instead of blaming browser storage.
   3. Closing the Save dialog while a save is rendering its thumbnail cancels that save; Save can be opened again at once.
-  4. If browser storage is full when the current settings or map are stored, a toast says "Browser storage is full. Changes won't survive a reload." It shows at most once per page load.
+  4. If browser storage is full or blocked when the current settings or map are stored, a toast says "Couldn't save to browser storage. Changes won't survive a reload." It shows at most once per page load.
   5. Leaving the editor with discarded changes clears the canvas, so the old map no longer flashes when the editor opens next.
   6. The Resolution help text says the preview renders at up to 512 pixels when fitted and sharpens to full resolution when zoomed in.
   7. The export toast uses the same format labels as the status bar ("WebP", "RAW16").
@@ -52,7 +52,7 @@ No new dependencies.
 
 **`js/app.js`**
 - `hashchange`: when `dialogOpen()`, `setHash(screen)` and return.
-- Save: `submitSave` keeps the thumbnail worker in `saveJob`; the Save dialog's `close` event terminates it and resets `saving`. A thumbnail failure (anything but cancellation) sets the error `thumb` with the message; a cancellation returns silently.
+- Save: `submitSave` creates the thumbnail worker, passes it to `thumbnail(worker, settings)` and keeps it in `saveJob`; the Save dialog's `close` event terminates it and resets `saving`. A thumbnail failure (anything but cancellation) sets the error `thumb` with the message; a cancellation returns silently. After a successful save the "Saved" toast shows before the map is attached, so a storage warning from storing the current map is not hidden.
 - `persist()` and `setCurrent()` check the return of `saveSettings`/`saveCurrent` and call `warnStorage()`, which toasts once.
 - `clearEditor` clears `#view`.
 - Helpers: `attachMap(map)` and `detachCurrent()` replace the repeated `setCurrent` objects; `stopPreview()` replaces the duplicated worker shutdown.
