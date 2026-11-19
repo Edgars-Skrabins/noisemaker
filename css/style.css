@@ -266,14 +266,14 @@ button, input, select { font: inherit; color: inherit; }
 .panel[open] > .panel-head .chev { transform: rotate(90deg); }
 .panel[open] > .panel-head { border-bottom: 1px solid var(--edge); }
 
-.panel-body { display: grid; gap: 6px; padding: 10px 10px 12px; }
+.panel-body { display: grid; gap: 4px; padding: 8px 10px 10px; }
 
 .prop {
   display: grid;
   grid-template-columns: 78px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-height: 24px;
+  min-height: 22px;
 }
 
 .prop-label {
@@ -421,7 +421,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .segmented input:checked + span { background: var(--pressed); color: var(--text); box-shadow: inset 0 0 0 1px #5a5a5a; }
 .segmented input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 0; }
 
-.check-row { min-height: 22px; }
+.check-row { min-height: 20px; }
 
 .check {
   display: inline-flex;
@@ -457,7 +457,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 .presets {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px 6px;
+  gap: 6px;
 }
 
 .preset {
