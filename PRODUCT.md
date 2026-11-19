@@ -5,7 +5,7 @@ Noisemaker generates procedural, seamlessly tileable grayscale noise maps in the
 
 ## Users and job
 - Game developers and technical artists who need textures, masks and heightmaps that repeat without seams.
-- They work at a desk on a desktop browser, often next to Photoshop, Substance or a game engine, and judge grayscale values by eye. *(Inferred from the brief and README.)*
+- They mostly work at a desk on a desktop browser, often next to Photoshop, Substance or a game engine, and judge grayscale values by eye. They also open it on a tablet or phone to browse saved maps and try seeds. *(Inferred from the brief and README.)*
 - The job: dial in a pattern quickly, check that it tiles, and export it at the right size and format.
 
 ## Constraints
@@ -15,12 +15,13 @@ Noisemaker generates procedural, seamlessly tileable grayscale noise maps in the
 - Plain HTML, CSS and ES modules; no framework, no build step, no runtime dependencies.
 
 ## Platform
-web (desktop first; a narrow stacked layout keeps it usable on small screens).
+web
 
 ## Brand commitments
-- A professional, Photoshop-like editor: dense, dark, neutral gray chrome with a single blue accent.
-- The chrome stays achromatic so it never tints the perception of the map.
+- "Darkroom": a calm, warm-charcoal workroom with a single amber accent, where the map is shown like a photographic print on a cream mat and alternative seeds sit on a contact sheet.
+- The chrome is deliberately warm (the user's choice); the map itself is always grayscale, and the cream mat gives a light frame to judge its values against.
 
 ## Features
 - A start screen listing the saved maps (open, delete) with "New map", which starts a blank map or one from a template.
 - Saved maps in the browser with save, overwrite and save-as-new, and a "Load map" dialog in the editor offering saved maps or templates (the presets).
+- Settings as numbered steps (Pattern, Detail, Tone, Export) with one-line summaries, and a contact sheet of four seeds to compare and adopt, with Shuffle for new ones.

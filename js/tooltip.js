@@ -13,9 +13,11 @@ function placeTip(btn) {
   const h = tooltip.offsetHeight;
   const vw = document.documentElement.clientWidth;
   const vh = document.documentElement.clientHeight;
-  let left = r.right + GAP;
+  const host = btn.closest('.steps');
+  const hostRect = host ? host.getBoundingClientRect() : r;
+  let left = (host && hostRect.right + w + GAP <= vw - GAP ? hostRect.right : r.right) + GAP;
   let top = r.top + r.height / 2 - h / 2;
-  if (left + w > vw - GAP) left = (btn.closest('.dock') || btn).getBoundingClientRect().left - w - GAP;
+  if (left + w > vw - GAP) left = hostRect.left - w - GAP;
   if (left < GAP) {
     left = Math.min(vw - w - GAP, Math.max(GAP, r.left + r.width / 2 - w / 2));
     top = r.bottom + 6;

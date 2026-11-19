@@ -1,6 +1,6 @@
 # Noisemaker
 
-Noisemaker is a browser app for generating seamlessly tileable grayscale noise maps (Perlin, Value, Worley and White noise, with fractal layering and domain warp) for game development. The app opens on a start screen listing your saved maps, where a new map starts blank or from a template. Maps are saved in the browser and export as PNG, JPG, JPEG, WebP, BMP, TGA or RAW16 (`.r16`) heightmaps. Everything runs in the browser; nothing is uploaded.
+Noisemaker is a browser app for generating seamlessly tileable grayscale noise maps (Perlin, Value, Worley and White noise, with fractal layering and domain warp) for game development. The app opens on a start screen listing your saved maps, where a new map starts blank or from a template. The editor shows the settings as numbered steps in a sidebar, the preview as a print on a cream mat, and a contact sheet of other seeds to pick from. Maps are saved in the browser and export as PNG, JPG, JPEG, WebP, BMP, TGA or RAW16 (`.r16`) heightmaps. Everything runs in the browser; nothing is uploaded.
 
 Live app: https://edgars-skrabins.github.io/noisemaker/
 
@@ -14,8 +14,8 @@ Live app: https://edgars-skrabins.github.io/noisemaker/
 
 ## Project structure
 
-- `index.html`, `css/`, `js/`: the app, served as-is from the repository root.
-- `js/noise.js`, `js/postprocess.js`, `js/encoders.js`, `js/settings.js`, `js/presets.js`, `js/storage.js`, `js/maps.js`, `js/help.js`, `js/view.js`, `js/fields.js`, `js/visibility.js`: pure logic and data with no DOM access (noise, image adjustments, file encoders, settings, templates, last-used settings, the saved-maps store, setting help texts, zoom maths, numeric field parsing, the rules that show or hide settings), tested under Node.
+- `index.html`, `css/`, `js/`, `fonts/`: the app, served as-is from the repository root. `fonts/` holds the self-hosted IBM Plex woff2 files and their licence.
+- `js/noise.js`, `js/postprocess.js`, `js/encoders.js`, `js/settings.js`, `js/presets.js`, `js/storage.js`, `js/maps.js`, `js/help.js`, `js/view.js`, `js/fields.js`, `js/visibility.js`, `js/summary.js`, `js/sheet.js`: pure logic and data with no DOM access (noise, image adjustments, file encoders, settings, templates, last-used settings, the saved-maps store, setting help texts, zoom maths, numeric field parsing, the rules that show or hide settings, the one-line step summaries, the contact-sheet seeds), tested under Node.
 - `js/boot.js`, `js/worker.js`, `js/worker-client.js`, `js/exporter.js`, `js/dialogs.js`, `js/tooltip.js`, `js/library.js`, `js/app.js`: picking the first screen before paint, the Web Worker, file export, modal dialogs, setting tooltips, the saved-map and template lists, and UI wiring.
 - `scripts/`: the local static dev server.
 - `tests/`: Node tests for the pure logic, the dev server and `index.html` matching the settings.
@@ -26,7 +26,7 @@ Live app: https://edgars-skrabins.github.io/noisemaker/
 ## Prerequisites
 
 - Node.js 20.11 or newer, to serve the app locally and run the tests. No version is pinned.
-- A current desktop browser with module Web Worker support (Chrome, Edge, Firefox or Safari).
+- A current browser with module Web Worker support (Chrome, Edge, Firefox or Safari), on desktop, tablet or phone.
 
 ## Setup
 

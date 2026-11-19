@@ -10,7 +10,7 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 - Node, using only its built-in modules, runs the local dev server (`scripts/serve.js`) and the tests (`node --test`). No dependencies.
 
 ## Layout
-- `index.html`, `css/`, `js/`: the app, served as-is from the repository root.
+- `index.html`, `css/`, `js/`, `fonts/`: the app, served as-is from the repository root. Fonts (IBM Plex) are self-hosted so the Content-Security-Policy stays `'self'`-only; never load fonts or other assets from a CDN.
 - `scripts/`: the local static dev server (`serve.js` starts it, `static.js` holds the testable pieces).
 - `tests/`: Node tests for the pure, DOM-free modules in `js/`, plus checks that `index.html` matches the settings definitions.
 - `prototype/`: the original single-page prototype. Reference only, never edited and not part of the app.
@@ -19,7 +19,7 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 
 Keep pure logic (noise math, image post-processing, file encoders, storage) in modules with no DOM access so it can be tested under Node. UI modules wire that logic to the DOM. Presets (`js/presets.js`) are read-only templates offered in the New map dialog (after "Blank") and the Load map dialog; `js/library.js` builds the saved-map and template lists for the start screen and the dialogs.
 
-The app is one page with two screens, the start screen and the editor, switched by `data-screen` on `<html>` in `js/app.js`. The editor is reflected in the URL as `#editor` (set with `history.replaceState`, so there are no history entries per screen); the plain URL opens the start screen. Keep all paths relative so the site works from any folder, e.g. GitHub Pages.
+The editor is a sidebar of numbered settings steps (`details.step`, one open at a time, each with a summary from `js/summary.js`) next to a stage with the preview on a print mat and the contact sheet of alternative seeds (`js/sheet.js`). The app is one page with two screens, the start screen and the editor, switched by `data-screen` on `<html>` in `js/app.js`. The editor is reflected in the URL as `#editor` (set with `history.replaceState`, so there are no history entries per screen); the plain URL opens the start screen. Keep all paths relative so the site works from any folder, e.g. GitHub Pages.
 
 ## Commands
 - Run locally: `npm start` from the repository root, then open http://localhost:5173 (`PORT` overrides the port). Workers and ES modules don't load from `file://`.

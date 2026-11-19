@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { DEFAULTS, OPTIONS, RANGES } from '../js/settings.js';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
@@ -56,4 +56,21 @@ test('the page sets a Content-Security-Policy and has no inline scripts or style
   for (const t of tags('script')) assert.ok(attr(t, 'src'), t);
   assert.doesNotMatch(html, /\sstyle="/);
   assert.doesNotMatch(html, /\son[a-z]+="/);
+});
+
+test('the settings steps are Pattern, Detail, Tone and Export, each with a summary', () => {
+  const steps = [...html.matchAll(/<details class="step"[^>]*>\s*<summary[^>]*>([\s\S]*?)<\/summary>/g)].map((m) => m[1]);
+  assert.deepEqual(steps.map((s) => s.match(/class="step-title">([^<]+)</)[1]), ['Pattern', 'Detail', 'Tone', 'Export']);
+  assert.deepEqual(steps.map((s) => s.match(/data-sum="([^"]+)"/)[1]), ['pattern', 'detail', 'tone', 'export']);
+});
+
+test('fonts are self-hosted and every font file the page and stylesheet use exists', () => {
+  const css = readFileSync(new URL('../css/style.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(css, /url\(["']?(https?:)?\/\//);
+  const cssFonts = [...css.matchAll(/url\("(\.\.\/fonts\/[^"]+)"\)/g)].map((m) => new URL(m[1], new URL('../css/', import.meta.url)));
+  const preloads = tags('link').filter((t) => attr(t, 'rel') === 'preload').map((t) => new URL(`../${attr(t, 'href')}`, import.meta.url));
+  assert.ok(cssFonts.length >= 5);
+  assert.ok(preloads.length > 0);
+  for (const url of [...cssFonts, ...preloads]) assert.ok(existsSync(url), url.pathname);
+  for (const url of preloads) assert.ok(cssFonts.some((u) => u.href === url.href), url.pathname);
 });
