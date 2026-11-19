@@ -3,7 +3,7 @@ process.env.TZ = 'Europe/Riga';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MAPS_KEY, CURRENT_KEY, NAME_MAX, UNTITLED,
+  MAPS_KEY, CURRENT_KEY, NAME_MAX, UNTITLED, THUMB_MAX,
   mapSettings, isDirty, cleanName, copyName, fileSlug, formatEdited,
   listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent, startMap,
 } from '../js/maps.js';
@@ -110,6 +110,20 @@ test('corrupt or non-array data reads as no maps', () => {
   assert.deepEqual(listMaps(undefined), []);
 });
 
+test('only base64 JPEG or PNG thumbnails within the size limit are kept', () => {
+  const storage = memoryStorage();
+  const png = 'data:image/png;base64,AAAA';
+  const svg = 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=';
+  const plain = 'data:image/jpeg,AAAA';
+  const huge = 'data:image/jpeg;base64,' + 'A'.repeat(THUMB_MAX);
+  const atLimit = 'data:image/jpeg;base64,' + 'A'.repeat(THUMB_MAX - 23);
+  const thumbs = [THUMB, png, svg, plain, huge, atLimit, 42];
+  storage.setItem(MAPS_KEY, JSON.stringify(thumbs.map((thumb, i) => ({ id: `t${i}`, name: `T${i}`, settings: {}, thumb }))));
+  const kept = Object.fromEntries(listMaps(storage).map((m) => [m.id, m.thumb]));
+  assert.equal(atLimit.length, THUMB_MAX);
+  assert.deepEqual(kept, { t0: THUMB, t1: png, t2: '', t3: '', t4: '', t5: atLimit, t6: '' });
+});
+
 test('old or partial entries are cleaned and invalid ones dropped', () => {
   const storage = memoryStorage();
   storage.setItem(MAPS_KEY, JSON.stringify([
@@ -210,7 +224,7 @@ test('yesterday follows calendar days across a daylight saving change', () => {
 });
 
 test('loadCurrent gives a blank untitled map by default and on bad data', () => {
-  const blank = { mapId: null, template: null, name: UNTITLED, base: mapSettings(DEFAULTS) };
+  const blank = { mapId: null, name: UNTITLED, base: mapSettings(DEFAULTS) };
   const storage = memoryStorage();
   assert.deepEqual(loadCurrent(storage), blank);
   storage.setItem(CURRENT_KEY, '{oops');
@@ -220,13 +234,13 @@ test('loadCurrent gives a blank untitled map by default and on bad data', () => 
 
 test('current map round-trips and is sanitised', () => {
   const storage = memoryStorage();
-  assert.equal(saveCurrent(storage, { mapId: 'id1', template: null, name: 'Rocks', base: { ...DEFAULTS, type: 'simplex' } }), true);
+  assert.equal(saveCurrent(storage, { mapId: 'id1', name: 'Rocks', base: { ...DEFAULTS, type: 'simplex' } }), true);
   const cur = loadCurrent(storage);
   assert.equal(cur.mapId, 'id1');
   assert.equal(cur.name, 'Rocks');
   assert.equal(cur.base.type, DEFAULTS.type);
   saveCurrent(storage, { mapId: 5, template: 'Clouds', name: '', base: null });
-  assert.deepEqual(loadCurrent(storage), { mapId: null, template: 'Clouds', name: UNTITLED, base: null });
+  assert.deepEqual(loadCurrent(storage), { mapId: null, name: UNTITLED, base: null });
 });
 
 test('startMap gives a blank untitled map on defaults keeping the export settings', () => {
@@ -235,7 +249,7 @@ test('startMap gives a blank untitled map on defaults keeping the export setting
   assert.deepEqual(out, mapSettings({ ...DEFAULTS, size: 2048, format: 'r16', quality: 0.7 }));
   assert.equal(out.seed, DEFAULTS.seed);
   assert.equal('tilePreview' in out, false);
-  assert.deepEqual(current, { mapId: null, template: null, name: UNTITLED, base: out });
+  assert.deepEqual(current, { mapId: null, name: UNTITLED, base: out });
   assert.equal(isDirty(out, current.base), false);
 });
 
@@ -251,5 +265,5 @@ test('startMap from a template applies its settings and name', () => {
   assert.equal(out.size, 256);
   assert.equal(out.format, 'webp');
   assert.equal(out.quality, 0.9);
-  assert.deepEqual(current, { mapId: null, template: 'Cracks', name: 'Cracks', base: out });
+  assert.deepEqual(current, { mapId: null, name: 'Cracks', base: out });
 });
