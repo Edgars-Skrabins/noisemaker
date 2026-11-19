@@ -4,9 +4,15 @@ import { loadSettings, saveSettings } from './storage.js';
 import { postProcess } from './postprocess.js';
 import { NoiseWorker, CancelledError } from './worker-client.js';
 import { canvasBlob, encode, download, formatBytes } from './exporter.js';
+import { HELP } from './help.js';
+import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel } from './view.js';
+import { commitNumber, formatNumber } from './fields.js';
 
 const PREVIEW_MAX = 512;
 const THUMB_SIZE = 72;
+const VIEW_PAD = 24;
+const TIP_DELAY = 350;
+const FORMAT_LABELS = { png: 'PNG', jpg: 'JPG', jpeg: 'JPEG', webp: 'WebP', bmp: 'BMP', tga: 'TGA', r16: 'RAW16' };
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -25,13 +31,22 @@ let previewWorker = null;
 let previewBusy = false;
 let reqId = 0;
 let last = null;
+let lastOut = null;
 let regenTimer = 0;
 let activePreset = null;
 let toastTimer = 0;
 let progressTimer = 0;
+let zoom = 1;
+let fitMode = true;
+let pointer = null;
+let tipButton = null;
+let tipPinned = false;
+let tipTimer = 0;
 
 const view = $('#view');
 const vctx = view.getContext('2d');
+const viewport = $('#viewport');
+const tooltip = $('#tooltip');
 const src = document.createElement('canvas');
 const sctx = src.getContext('2d');
 
@@ -46,21 +61,16 @@ function readInput(el) {
   return el.value;
 }
 
-function formatValue(key, v) {
-  if (key === 'steps') return v <= 1 ? 'off' : String(v);
-  if (key === 'octaves') return String(v);
-  if (key === 'quality') return Math.round(v * 100) + '%';
-  if (key === 'brightness') return (v > 0 ? '+' : '') + v.toFixed(2);
-  if (key === 'scale') return v.toFixed(1);
-  return Number(v).toFixed(2);
+function numField(key) {
+  return $(`.num[data-num="${key}"]`);
 }
 
 function syncRange(el) {
   const min = parseFloat(el.min);
   const max = parseFloat(el.max);
   el.style.setProperty('--pct', ((parseFloat(el.value) - min) / (max - min)) * 100 + '%');
-  const out = $(`output[data-for="${el.dataset.key}"]`);
-  if (out) out.textContent = formatValue(el.dataset.key, parseFloat(el.value));
+  const num = numField(el.dataset.key);
+  if (num) num.value = formatNumber(state[el.dataset.key], el.step);
 }
 
 function writeControls() {
@@ -72,6 +82,7 @@ function writeControls() {
     if (el.type === 'range') syncRange(el);
   });
   updateVisibility();
+  updateStatusDoc();
 }
 
 function matches(expr) {
@@ -91,7 +102,19 @@ function updateVisibility() {
 
 function markPreset(i) {
   activePreset = i;
-  $$('.preset').forEach((b, j) => b.classList.toggle('active', j === i));
+  $$('.preset').forEach((b, j) => {
+    b.classList.toggle('active', j === i);
+    b.setAttribute('aria-pressed', String(j === i));
+  });
+}
+
+function setBusy(on) {
+  $('#busy').classList.toggle('on', on);
+  $('#status-state').textContent = on ? 'Rendering…' : 'Ready';
+}
+
+function updateStatusDoc() {
+  $('#status-doc').textContent = `${state.size} × ${state.size} · ${FORMAT_LABELS[state.format]}`;
 }
 
 function scheduleRegen() {
@@ -108,46 +131,93 @@ async function regen() {
   if (!previewWorker) previewWorker = new NoiseWorker();
   const id = ++reqId;
   previewBusy = true;
-  $('#busy').classList.add('on');
+  setBusy(true);
   let data;
   try {
     data = await previewWorker.run(res, res, noiseParams(state));
   } catch (err) {
     if (err instanceof CancelledError || id !== reqId) return;
     previewBusy = false;
-    $('#busy').classList.remove('on');
+    setBusy(false);
     toast('Preview failed: ' + err.message);
     return;
   }
   if (id !== reqId) return;
   previewBusy = false;
-  $('#busy').classList.remove('on');
+  setBusy(false);
   last = { data, res };
   draw();
+}
+
+function tiles() {
+  return state.tilePreview ? 2 : 1;
 }
 
 function draw() {
   if (!last) return;
   const { data, res } = last;
-  const { rgba } = postProcess(data, res, res, state);
+  lastOut = { ...postProcess(data, res, res, state), res };
   src.width = res;
   src.height = res;
-  sctx.putImageData(new ImageData(rgba, res, res), 0, 0);
-  if (state.tilePreview) {
-    view.width = res * 2;
-    view.height = res * 2;
-    for (let i = 0; i < 4; i++) vctx.drawImage(src, (i & 1) * res, (i >> 1) * res);
-  } else {
-    view.width = res;
-    view.height = res;
-    vctx.drawImage(src, 0, 0);
+  sctx.putImageData(new ImageData(lastOut.rgba, res, res), 0, 0);
+  const n = tiles();
+  view.width = res * n;
+  view.height = res * n;
+  for (let i = 0; i < n * n; i++) vctx.drawImage(src, (i % n) * res, Math.floor(i / n) * res);
+  layout();
+  updateCursor();
+}
+
+function layout() {
+  const doc = state.size * tiles();
+  if (fitMode) zoom = fitZoom(viewport.clientWidth, viewport.clientHeight, doc, doc, VIEW_PAD);
+  const px = Math.max(1, Math.round(doc * zoom));
+  view.style.width = px + 'px';
+  view.style.height = px + 'px';
+  view.classList.toggle('pixelated', state.size <= PREVIEW_MAX && zoom > 1);
+  $('#zoom-level').textContent = formatZoom(zoom);
+  $('#zoom-fit').setAttribute('aria-pressed', String(fitMode));
+}
+
+function setZoom(z) {
+  const cx = (viewport.scrollLeft + viewport.clientWidth / 2) / viewport.scrollWidth;
+  const cy = (viewport.scrollTop + viewport.clientHeight / 2) / viewport.scrollHeight;
+  fitMode = false;
+  zoom = z;
+  layout();
+  viewport.scrollLeft = cx * viewport.scrollWidth - viewport.clientWidth / 2;
+  viewport.scrollTop = cy * viewport.scrollHeight - viewport.clientHeight / 2;
+}
+
+function fit() {
+  fitMode = true;
+  layout();
+}
+
+function updateCursor() {
+  const out = $('#status-cursor');
+  if (!pointer || !lastOut) {
+    out.textContent = '';
+    return;
   }
+  const rect = view.getBoundingClientRect();
+  const size = state.size;
+  const p = pointerToPixel(pointer.x - rect.left, pointer.y - rect.top, rect.width, rect.height, size, size, tiles());
+  if (!p) {
+    out.textContent = '';
+    return;
+  }
+  const { res, height } = lastOut;
+  const v = height[Math.floor((p.y * res) / size) * res + Math.floor((p.x * res) / size)];
+  out.textContent = `X ${p.x}   Y ${p.y}   ${v.toFixed(3)} · ${Math.round(v * 255)}`;
 }
 
 function onChange(key) {
   if (!VIEW_KEYS.has(key)) markPreset(null);
   updateVisibility();
+  updateStatusDoc();
   persist();
+  if (key === 'size' || key === 'tilePreview') layout();
   if (NOISE_KEYS.has(key)) scheduleRegen();
   else if (key !== 'format' && key !== 'quality') draw();
 }
@@ -156,6 +226,7 @@ function setState(patch) {
   state = { ...state, ...patch };
   writeControls();
   persist();
+  layout();
   scheduleRegen();
 }
 
@@ -171,9 +242,12 @@ async function buildPresets() {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'preset';
+    b.title = preset.name;
+    b.setAttribute('aria-pressed', 'false');
     const canvas = document.createElement('canvas');
     canvas.width = THUMB_SIZE;
     canvas.height = THUMB_SIZE;
+    canvas.setAttribute('aria-hidden', 'true');
     const label = document.createElement('span');
     label.textContent = preset.name;
     b.append(canvas, label);
@@ -276,6 +350,113 @@ function toast(msg) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
 }
 
+function placeTip(btn) {
+  const gap = 8;
+  const r = btn.getBoundingClientRect();
+  const w = tooltip.offsetWidth;
+  const h = tooltip.offsetHeight;
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  let left = r.right + gap;
+  let top = r.top + r.height / 2 - h / 2;
+  if (left + w > vw - gap) left = (btn.closest('.dock') || btn).getBoundingClientRect().left - w - gap;
+  if (left < gap) {
+    left = Math.min(vw - w - gap, Math.max(gap, r.left + r.width / 2 - w / 2));
+    top = r.bottom + 6;
+    if (top + h > vh - gap) top = r.top - h - 6;
+  }
+  tooltip.style.left = Math.round(left) + 'px';
+  tooltip.style.top = Math.round(Math.min(vh - h - gap, Math.max(gap, top))) + 'px';
+}
+
+function showTip(btn, pinned = false) {
+  clearTimeout(tipTimer);
+  if (tipButton && tipButton !== btn) hideTip();
+  const title = document.createElement('strong');
+  title.textContent = btn.dataset.name;
+  tooltip.replaceChildren(title, document.createTextNode(HELP[btn.dataset.helpFor]));
+  tooltip.hidden = false;
+  placeTip(btn);
+  btn.setAttribute('aria-describedby', 'tooltip');
+  btn.classList.add('open');
+  tipButton = btn;
+  tipPinned = pinned;
+}
+
+function hideTip() {
+  clearTimeout(tipTimer);
+  if (!tipButton) return;
+  tipButton.removeAttribute('aria-describedby');
+  tipButton.classList.remove('open');
+  tooltip.hidden = true;
+  tipButton = null;
+  tipPinned = false;
+}
+
+function setupHelp() {
+  $$('[data-help]').forEach((el) => {
+    const key = el.dataset.help;
+    const name = el.textContent.trim();
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'info';
+    btn.dataset.helpFor = key;
+    btn.dataset.name = name;
+    btn.setAttribute('aria-label', `About ${name}`);
+    btn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>';
+    if (el.classList.contains('prop-label')) {
+      const text = document.createElement('span');
+      text.id = el.id;
+      text.textContent = name;
+      el.removeAttribute('id');
+      el.replaceChildren(text, btn);
+    } else {
+      (el.closest('label') || el).after(btn);
+    }
+    btn.addEventListener('pointerenter', (e) => {
+      if (e.pointerType !== 'mouse' || tipPinned) return;
+      clearTimeout(tipTimer);
+      tipTimer = setTimeout(() => showTip(btn), TIP_DELAY);
+    });
+    btn.addEventListener('pointerleave', () => {
+      clearTimeout(tipTimer);
+      if (tipButton === btn && !tipPinned) hideTip();
+    });
+    btn.addEventListener('focus', () => {
+      if (btn.matches(':focus-visible')) showTip(btn);
+    });
+    btn.addEventListener('blur', () => {
+      if (tipButton === btn) hideTip();
+    });
+    btn.addEventListener('click', () => {
+      if (tipButton === btn && tipPinned) hideTip();
+      else showTip(btn, true);
+    });
+  });
+
+  document.addEventListener('pointerdown', (e) => {
+    if (tipButton && !e.target.closest('.info')) hideTip();
+  });
+  $('.dock').addEventListener('scroll', hideTip, { passive: true });
+  window.addEventListener('resize', hideTip);
+  window.addEventListener('scroll', hideTip, { passive: true });
+}
+
+function rangeFor(num) {
+  return $(`input[type="range"][data-key="${num.dataset.num}"]`);
+}
+
+function commitField(num, text = num.value) {
+  const key = num.dataset.num;
+  const range = rangeFor(num);
+  const v = commitNumber(text, parseFloat(range.min), parseFloat(range.max), parseFloat(range.step), state[key]);
+  const changed = v !== state[key];
+  state[key] = v;
+  range.value = v;
+  syncRange(range);
+  if (changed) onChange(key);
+}
+
 function bind() {
   $$('[data-key]').forEach((el) => {
     const ev = el.type === 'range' || el.type === 'number' ? 'input' : 'change';
@@ -287,6 +468,23 @@ function bind() {
       if (el.type === 'range') syncRange(el);
       onChange(key);
     });
+  });
+
+  $$('.num').forEach((num) => {
+    num.addEventListener('change', () => commitField(num));
+    num.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') commitField(num);
+      else if (e.key === 'Escape') {
+        num.value = formatNumber(state[num.dataset.num], rangeFor(num).step);
+        num.blur();
+      } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        const step = parseFloat(rangeFor(num).step) * (e.shiftKey ? 10 : 1);
+        commitField(num, state[num.dataset.num] + (e.key === 'ArrowUp' ? step : -step));
+        num.select();
+      }
+    });
+    num.addEventListener('focus', () => num.select());
   });
 
   $('#reseed').addEventListener('click', () => setState({ seed: newSeed() }));
@@ -301,7 +499,27 @@ function bind() {
   $('#download').addEventListener('click', doExport);
   $('#copy').addEventListener('click', doCopy);
 
+  $('#zoom-in').addEventListener('click', () => setZoom(zoomIn(zoom)));
+  $('#zoom-out').addEventListener('click', () => setZoom(zoomOut(zoom)));
+  $('#zoom-fit').addEventListener('click', fit);
+  $('#zoom-actual').addEventListener('click', () => setZoom(1));
+  new ResizeObserver(() => { if (fitMode) layout(); }).observe(viewport);
+
+  view.addEventListener('pointermove', (e) => {
+    pointer = { x: e.clientX, y: e.clientY };
+    updateCursor();
+  });
+  view.addEventListener('pointerleave', () => {
+    pointer = null;
+    updateCursor();
+  });
+  viewport.addEventListener('scroll', () => { if (pointer) updateCursor(); }, { passive: true });
+
   document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && tipButton) {
+      hideTip();
+      return;
+    }
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' && e.target.type !== 'range' && e.target.type !== 'checkbox' && e.target.type !== 'radio') return;
@@ -311,11 +529,15 @@ function bind() {
       state.tilePreview = !state.tilePreview;
       writeControls();
       onChange('tilePreview');
-    }
+    } else if (e.key === '+' || e.key === '=') setZoom(zoomIn(zoom));
+    else if (e.key === '-' || e.key === '_') setZoom(zoomOut(zoom));
+    else if (e.key === '0') fit();
   });
 }
 
+setupHelp();
 writeControls();
 bind();
+layout();
 regen();
 buildPresets().catch((err) => toast('Preset thumbnails failed: ' + err.message));
