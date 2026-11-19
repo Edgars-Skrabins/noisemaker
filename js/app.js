@@ -27,6 +27,7 @@ const SAVE_ERRORS = {
   full: 'Browser storage is full. Delete some saved maps and try again.',
   unavailable: 'Saving isn\'t available: this browser is blocking local storage.',
   missing: 'This map no longer exists. Save it as a new map.',
+  thumb: 'Couldn\'t render the thumbnail',
 };
 const FORMAT_LABELS = { png: 'PNG', jpg: 'JPG', jpeg: 'JPEG', webp: 'WebP', bmp: 'BMP', tga: 'TGA', r16: 'RAW16' };
 
@@ -52,6 +53,8 @@ let lastOut = null;
 let regenTimer = 0;
 let current = loadCurrent(storage);
 let saving = false;
+let saveWorker = null;
+let storageWarned = false;
 let templatesBuilt = false;
 let newBuilt = false;
 let thumbJobs = null;
@@ -72,14 +75,20 @@ const tooltip = $('#tooltip');
 const src = document.createElement('canvas');
 const sctx = src.getContext('2d');
 
+function warnStorage(ok) {
+  if (ok || storageWarned || !storage) return;
+  storageWarned = true;
+  toast('Browser storage is full. Changes won\'t survive a reload.');
+}
+
 function persist() {
-  saveSettings(storage, state);
+  warnStorage(saveSettings(storage, state));
   updateDoc();
 }
 
 function setCurrent(next) {
   current = next;
-  saveCurrent(storage, current);
+  warnStorage(saveCurrent(storage, current));
   updateDoc();
 }
 
@@ -322,7 +331,7 @@ async function doExport() {
         return;
       }
       download(blob, fileName(settings, label, format));
-      toast(`Exported ${size}×${size} ${format.toUpperCase()} · ${formatBytes(blob.size)}`);
+      toast(`Exported ${size}×${size} ${FORMAT_LABELS[format]} · ${formatBytes(blob.size)}`);
     });
   } catch (err) {
     toast('Export failed: ' + err.message);
@@ -356,6 +365,7 @@ async function thumbImage(worker, settings) {
 
 async function thumbnail(settings) {
   const worker = new NoiseWorker();
+  saveWorker = worker;
   try {
     const canvas = document.createElement('canvas');
     canvas.width = THUMB_SIZE;
@@ -364,7 +374,12 @@ async function thumbnail(settings) {
     return canvas.toDataURL('image/jpeg', THUMB_QUALITY);
   } finally {
     worker.terminate();
+    if (saveWorker === worker) saveWorker = null;
   }
+}
+
+function cancelSave() {
+  if (saveWorker) saveWorker.terminate();
 }
 
 function commitFocusedField() {
@@ -376,8 +391,8 @@ function saveMode() {
   return $('#save-overwrite').checked && !$('#save-choice').hidden ? 'overwrite' : 'new';
 }
 
-function setSaveError(code) {
-  $('#save-error').textContent = code ? SAVE_ERRORS[code] : '';
+function setSaveError(code, detail) {
+  $('#save-error').textContent = code ? SAVE_ERRORS[code] + (detail ? ': ' + detail : '') : '';
   $('#save-name').setAttribute('aria-invalid', String(code === 'name'));
 }
 
@@ -421,19 +436,20 @@ async function submitSave() {
   const settings = mapSettings(state);
   saving = true;
   $('#save-submit').disabled = true;
-  let res;
+  let thumb;
   try {
-    const thumb = await thumbnail(settings);
-    if (!$('#save-dialog').open) return;
-    res = mode === 'overwrite'
-      ? overwriteMap(storage, current.mapId, { settings, thumb })
-      : createMap(storage, { name, settings, thumb });
+    thumb = await thumbnail(settings);
   } catch (err) {
-    res = { ok: false, error: 'unavailable', message: err.message };
+    if (!(err instanceof CancelledError)) setSaveError('thumb', err.message);
+    return;
   } finally {
     saving = false;
     $('#save-submit').disabled = false;
   }
+  if (!$('#save-dialog').open) return;
+  const res = mode === 'overwrite'
+    ? overwriteMap(storage, current.mapId, { settings, thumb })
+    : createMap(storage, { name, settings, thumb });
   if (!res.ok) {
     if (res.error === 'missing') {
       setCurrent({ ...current, mapId: null, template: null, base: null });
@@ -608,8 +624,9 @@ function clearEditor() {
   state = { ...next.settings, tilePreview: state.tilePreview };
   last = null;
   lastOut = null;
+  vctx.clearRect(0, 0, view.width, view.height);
   writeControls();
-  saveSettings(storage, state);
+  warnStorage(saveSettings(storage, state));
   setCurrent(next.current);
 }
 
@@ -828,6 +845,10 @@ function bind() {
   $('#new-map').addEventListener('click', (e) => openNew(e.currentTarget));
   $('#new-map-empty').addEventListener('click', (e) => openNew(e.currentTarget));
   window.addEventListener('hashchange', async () => {
+    if (dialogOpen()) {
+      setHash(screen);
+      return;
+    }
     if (location.hash === EDITOR_HASH) {
       if (screen !== 'editor') showScreen('editor');
     } else if (screen === 'editor' && !(await goHome())) {
@@ -841,6 +862,7 @@ function bind() {
     e.preventDefault();
     submitSave();
   });
+  $('#save-dialog').addEventListener('close', cancelSave);
   $$('input[name="save-mode"]').forEach((r) => r.addEventListener('change', syncSaveMode));
   $('#save-name').addEventListener('input', () => setSaveError(null));
   $('#tab-saved').addEventListener('click', () => selectTab('saved'));
