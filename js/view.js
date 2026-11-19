@@ -33,3 +33,14 @@ export function pointerToPixel(px, py, displayW, displayH, srcW, srcH, tiles = 1
   const y = Math.floor((py / displayH) * srcH * tiles) % srcH;
   return { x, y };
 }
+
+export const PREVIEW_BASE = 512;
+
+export function previewResolution(size, zoom, fit, tiles = 1) {
+  if (fit) return Math.min(size, PREVIEW_BASE);
+  const cap = tiles > 1 ? 2048 : 4096;
+  const limit = Math.min(size, cap);
+  let res = Math.min(PREVIEW_BASE, limit);
+  while (res < limit && res < size * zoom) res *= 2;
+  return Math.min(res, limit);
+}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ZOOM_STEPS, fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel } from '../js/view.js';
+import { ZOOM_STEPS, fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel, previewResolution } from '../js/view.js';
 
 test('fitZoom picks the largest zoom that fits both axes', () => {
   assert.equal(fitZoom(1000, 600, 1024, 1024, 0), 600 / 1024);
@@ -41,4 +41,25 @@ test('pointerToPixel maps display coordinates to source pixels', () => {
 test('pointerToPixel wraps into one tile when the preview is tiled', () => {
   assert.deepEqual(pointerToPixel(300, 100, 512, 512, 128, 128, 2), { x: 22, y: 50 });
   assert.deepEqual(pointerToPixel(256, 256, 512, 512, 128, 128, 2), { x: 0, y: 0 });
+});
+
+test('previewResolution stays at the base size while fitted', () => {
+  assert.equal(previewResolution(4096, 0.2, true), 512);
+  assert.equal(previewResolution(1024, 0.74, true, 2), 512);
+  assert.equal(previewResolution(256, 2, true), 256);
+});
+
+test('previewResolution grows with zoom until every export pixel is rendered', () => {
+  assert.equal(previewResolution(4096, 1, false), 4096);
+  assert.equal(previewResolution(4096, 0.5, false), 2048);
+  assert.equal(previewResolution(4096, 0.3, false), 2048);
+  assert.equal(previewResolution(1024, 1, false), 1024);
+  assert.equal(previewResolution(1024, 0.25, false), 512);
+  assert.equal(previewResolution(2048, 8, false), 2048);
+  assert.equal(previewResolution(128, 4, false), 128);
+});
+
+test('previewResolution caps the tiled preview so the canvas stays bounded', () => {
+  assert.equal(previewResolution(4096, 1, false, 2), 2048);
+  assert.equal(previewResolution(2048, 1, false, 2), 2048);
 });
