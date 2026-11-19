@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSampler, generate } from '../js/noise.js';
+import { createSampler, generate, octaveFrequencies } from '../js/noise.js';
 import { DEFAULTS, noiseParams } from '../js/settings.js';
 
 const params = (patch) => noiseParams({ ...DEFAULTS, ...patch });
@@ -77,4 +77,29 @@ test('non-tileable maps do not repeat at the edges', () => {
   let diff = 0;
   for (let i = 0; i < 16; i++) diff += Math.abs(sample(0, i / 16) - sample(1, i / 16));
   assert.ok(diff > 1e-3);
+});
+
+test('tiled octave frequencies are integers that strictly increase', () => {
+  assert.deepEqual(octaveFrequencies(1, 1.2, 6, true), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(octaveFrequencies(4, 2, 4, true), [4, 8, 16, 32]);
+  for (const [scale, lac] of [[1, 1.2], [2.5, 1.35], [7.5, 1.6], [32, 4]]) {
+    const f = octaveFrequencies(scale, lac, 10, true);
+    for (let i = 0; i < f.length; i++) {
+      assert.ok(Number.isInteger(f[i]));
+      if (i > 0) assert.ok(f[i] > f[i - 1], `${scale} ${lac} ${f}`);
+    }
+  }
+});
+
+test('non-tiled octave frequencies follow lacunarity exactly', () => {
+  const f = octaveFrequencies(1.5, 1.2, 3, false);
+  assert.ok(Math.abs(f[2] - 1.5 * 1.2 * 1.2) < 1e-12);
+});
+
+test('white noise preview is a subsample of the export resolution', () => {
+  const big = generate(256, 256, params({ type: 'white', size: 256 }));
+  const small = generate(64, 64, params({ type: 'white', size: 256 }));
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) assert.equal(small[y * 64 + x], big[y * 4 * 256 + x * 4]);
+  }
 });

@@ -112,16 +112,29 @@ function createBase(p) {
   return perlin;
 }
 
+export function octaveFrequencies(scale, lacunarity, octaves, tile) {
+  const freqs = [];
+  let freq = scale;
+  let prev = 0;
+  for (let i = 0; i < octaves; i++) {
+    const f = tile ? Math.max(prev + 1, Math.round(freq)) : freq;
+    freqs.push(f);
+    prev = f;
+    freq *= lacunarity;
+  }
+  return freqs;
+}
+
 function makeFractal(p, base, tile) {
   const octaves = p.fractal === 'none' ? 1 : Math.max(1, p.octaves | 0);
   const mode = p.fractal;
+  const freqs = octaveFrequencies(p.scale, p.lacunarity, octaves, tile);
   return (u, v, seed) => {
     let sum = 0;
     let amp = 1;
     let norm = 0;
-    let freq = p.scale;
     for (let i = 0; i < octaves; i++) {
-      const f = tile ? Math.max(1, Math.round(freq)) : freq;
+      const f = freqs[i];
       let n = base(u * f, v * f, seed + i * 7919, tile ? f : 0);
       if (mode === 'ridged') {
         n = 1 - Math.abs(n);
@@ -132,7 +145,6 @@ function makeFractal(p, base, tile) {
       sum += n * amp;
       norm += amp;
       amp *= p.gain;
-      freq *= p.lacunarity;
     }
     return sum / norm;
   };
@@ -157,8 +169,11 @@ export function generate(w, h, p, onProgress) {
   const seed = p.seed | 0;
 
   if (p.type === 'white') {
+    const kx = (p.size || w) / w;
+    const ky = (p.size || h) / h;
     for (let y = 0; y < h; y++) {
-      for (let x = 0; x < w; x++) out[y * w + x] = hash(x, y, seed) * INV32;
+      const sy = Math.floor(y * ky);
+      for (let x = 0; x < w; x++) out[y * w + x] = hash(Math.floor(x * kx), sy, seed) * INV32;
     }
     return out;
   }
