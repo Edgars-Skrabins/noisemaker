@@ -1,7 +1,7 @@
 # Saved maps — Spec
 
 **Type:** feature
-**Status:** in progress
+**Status:** done
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
