@@ -119,8 +119,8 @@ Baseline before starting: 53 tests passing.
 - [x] A3. `tests/maps.test.js`: create (id, times, cleaned name, empty-name error), overwrite (keeps id/name/created, updates settings/updated, missing id), save-as-new next to an existing map, list order, delete (and unknown id), get, corrupt JSON and non-array data, entries with missing fields or old settings (`simplex`), storage full (`QuotaExceededError`) and unavailable storage, `isDirty` ignoring `tilePreview`, `cleanName`, `copyName`, `fileSlug`, `formatEdited`, `loadCurrent` defaults and sanitising.
 
 ### B. Markup and styles
-- [ ] B1. `index.html`: top bar doc title and Load map / Save buttons, new icons, the three dialogs; remove the Presets panel.
-- [ ] B2. `css/style.css`: doc title, end toolbar, dialogs, tabs, map cards, errors, narrow layout; remove the preset styles.
+- [x] B1. `index.html`: top bar doc title and Load map / Save buttons, new icons, the three dialogs; remove the Presets panel.
+- [x] B2. `css/style.css`: doc title, end toolbar, dialogs, tabs, map cards, errors, narrow layout; remove the preset styles.
 
 ### C. Editor wiring
 - [ ] C1. `js/dialogs.js` (`openDialog`, `confirmDialog`) and `js/library.js` (`mapCard`, `renderSavedList`, `renderTemplateList`).
