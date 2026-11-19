@@ -15,7 +15,7 @@ colors:
   selected: "#3A2C1A"
   text: "#EFE7DC"
   text-2: "#B3A797"
-  text-3: "#8C8174"
+  text-3: "#998D7F"
   accent: "#E8A24A"
   accent-hover: "#F0B061"
   accent-active: "#D9923A"
@@ -164,7 +164,7 @@ A calm darkroom for making noise maps. Settings sit in a warm-charcoal sidebar a
 - One amber accent. `accent` marks focus rings, the open step's number, slider fill, checked boxes and radios, the unsaved dot, the current contact-sheet frame, the open map and progress. It sits behind text only on primary buttons and the small "Open" badge, always with `on-accent` text (≥ 7:1).
 - `selected` (deep amber-brown) with a 1 px amber edge marks selected segments, tabs and pressed toggles (Tile 2×2, Fit).
 - The map is grayscale and never tinted. The cream `mat` frames it with a light, near-neutral border so values read against both a light and a dark edge. `preview-empty` is the mid-gray shown before the first render.
-- Text: `text` for values, titles and names; `text-2` for labels, summaries and meta; `text-3` only for icons, step numbers at rest and idle readouts.
+- Text: `text` for values, titles and names; `text-2` for labels, summaries and meta; `text-3` (≥ 4.5:1 on `panel` and `panel-hover`) for icons, step numbers at rest and idle readouts.
 
 ## Typography
 - IBM Plex Sans for the UI and IBM Plex Mono for numbers (fields, zoom, status line, seeds, summaries, dates), step numbers and uppercase micro-labels (brand, "Contact sheet", "Not saved", the saved-map count). Both are self-hosted woff2 subsets in `fonts/` (Latin-1 and Latin Extended-A for Sans, Latin-1 and the maths subset for Mono) so the CSP stays `'self'`-only.
@@ -205,7 +205,7 @@ A calm darkroom for making noise maps. Settings sit in a warm-charcoal sidebar a
 - **Status line**: render state, export size and format, cursor position in export pixels and the height value (0–1 and 0–255); the cursor readout hides on devices without hover.
 
 ## Touch
-- On `pointer: coarse` every control reaches about 44 px: 56 px step headers, 44 px tools and buttons, 42 px fields with 16 px text (so iOS doesn't zoom), 40 px segments, 22 px checkboxes in 44 px rows, 24 px slider thumbs on 44 px tracks, 36 px info buttons.
+- On `pointer: coarse` every control reaches about 44 px: 56 px step headers, 44 px tools and buttons, 42 px fields with 16 px text (so iOS doesn't zoom), 44 px segments, tabs and delete buttons, 22 px checkboxes in 44 px rows, 24 px slider thumbs on 44 px tracks, and info buttons whose hit area grows to 44 px without moving the layout.
 
 ## Motion
 - State changes only: 120–220 ms on an exponential ease-out (`cubic-bezier(0.16, 1, 0.3, 1)`): hover lifts on prints, the chevron flip, colour changes, the toast. The busy sweep is the only loop and marks rendering. `prefers-reduced-motion` turns transitions and lifts off and makes the sweep a static bar.

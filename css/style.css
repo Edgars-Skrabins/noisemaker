@@ -93,13 +93,12 @@
   --selected: #3a2c1a;
   --text: #efe7dc;
   --text-2: #b3a797;
-  --text-3: #8c8174;
+  --text-3: #998d7f;
   --accent: #e8a24a;
   --accent-hover: #f0b061;
   --accent-active: #d9923a;
   --on-accent: #221608;
   --mat: #efe7dc;
-  --mat-ink: #6b5f50;
   --tooltip: #332d27;
   --error: #ef8a6f;
   --radius: 4px;
@@ -1106,26 +1105,29 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 @media (pointer: coarse) {
   .step-head { min-height: 56px; }
   .tool { height: 44px; padding: 0 12px; }
-  .tool.icon-only, .stage-bar .tool:not(.zoom-actual):not(.toggle-tool) { width: 44px; padding: 0; }
-  .stage-bar .toggle-tool { min-width: 44px; }
+  .tool { min-width: 44px; }
+  .tool.icon-only { width: 44px; padding: 0; }
   .btn { height: 44px; }
   .foot-actions .btn { height: 46px; }
   .field, .num { height: 42px; font-size: 16px; }
   .num { width: 68px; }
   .prop { min-height: 44px; }
-  .segmented span { height: 40px; }
+  .segmented span { height: 44px; }
   .check { min-height: 44px; }
   .check input { width: 22px; height: 22px; }
   .check input:checked { background-size: 16px; }
-  .info { width: 36px; height: 36px; margin: -9px -6px; }
-  .info .icon { width: 15px; height: 15px; }
-  .check-row .info { margin-left: -10px; }
+  .info { position: relative; }
+  .info::after { content: ""; position: absolute; inset: -13px; }
   input[type="range"] { height: 44px; }
   input[type="range"]::-webkit-slider-thumb { width: 24px; height: 24px; margin-top: -10.5px; }
   input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; }
-  .tab { height: 40px; }
-  .map-delete { width: 40px; height: 40px; }
+  .tab { height: 44px; }
+  .map-delete { width: 44px; height: 44px; }
   .name-row .field { height: 44px; }
+}
+
+@media (pointer: coarse) and (max-width: 1099px) {
+  .stage-bar .tool:not(.zoom-actual):not(.toggle-tool) { width: 44px; padding: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
