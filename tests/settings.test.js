@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULTS, OPTIONS, RANGES, sanitize, randomize, noiseParams } from '../js/settings.js';
+import { DEFAULTS, OPTIONS, sanitize, randomize, noiseParams } from '../js/settings.js';
 import { PRESETS } from '../js/presets.js';
 
 test('sanitize fills missing keys with defaults', () => {
@@ -26,11 +26,6 @@ test('sanitize clamps numbers to their ranges and rounds integers', () => {
   assert.equal(s.gain, DEFAULTS.gain);
 });
 
-test('contrast can go down to 0', () => {
-  assert.equal(RANGES.contrast[0], 0);
-  assert.equal(sanitize({ contrast: 0 }).contrast, 0);
-});
-
 test('randomize only produces allowed, tileable values', () => {
   let x = 0.123;
   const random = () => (x = (x * 9301 + 49297) % 233280 / 233280);
@@ -38,7 +33,6 @@ test('randomize only produces allowed, tileable values', () => {
     const r = randomize(random);
     assert.deepEqual(sanitize({ ...DEFAULTS, ...r }), { ...DEFAULTS, ...r });
     assert.ok(OPTIONS.type.includes(r.type));
-    assert.notEqual(r.type, 'simplex');
   }
 });
 

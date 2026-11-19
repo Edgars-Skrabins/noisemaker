@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encodeBMP, encodeTGA, encodeR16, mimeFor } from '../js/encoders.js';
+import { OPTIONS } from '../js/settings.js';
 
 function image(w, h) {
   const rgba = new Uint8ClampedArray(w * h * 4);
@@ -62,6 +63,6 @@ test('RAW16 writes little-endian 16-bit samples', () => {
 });
 
 test('every export format has a MIME type', () => {
-  for (const f of ['png', 'jpg', 'jpeg', 'webp', 'bmp', 'tga', 'r16']) assert.ok(mimeFor(f));
+  for (const f of OPTIONS.format) assert.ok(mimeFor(f), f);
   assert.equal(mimeFor('jpg'), 'image/jpeg');
 });
