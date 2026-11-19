@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-screen="start">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -8,6 +8,7 @@
 <meta name="theme-color" content="#1b1b1b">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23363636'/%3E%3Crect x='3' y='3' width='5' height='5' fill='%23e3e3e3'/%3E%3Crect x='8' y='3' width='5' height='5' fill='%238a8a8a'/%3E%3Crect x='3' y='8' width='5' height='5' fill='%235a5a5a'/%3E%3Crect x='8' y='8' width='5' height='5' fill='%23b8b8b8'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<script>document.documentElement.dataset.screen = location.hash === '#editor' ? 'editor' : 'start';</script>
 </head>
 <body>
 <svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -26,15 +27,17 @@
   <symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 3.5a1 1 0 0 1 1-1h7.3l2.7 2.7v7.3a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/><path d="M5.5 2.5v3h4.5v-3M5 13.5V9.5h6v4"/></symbol>
   <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.1a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.1"/></symbol>
   <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
 </svg>
 
 <header class="topbar">
   <div class="brand">
-    <span class="mark" aria-hidden="true"></span>
-    <h1>Noisemaker</h1>
+    <button id="home" class="home" type="button" title="Start screen" aria-label="Noisemaker, start screen">
+      <span class="mark" aria-hidden="true"></span><span class="brand-name">Noisemaker</span>
+    </button>
   </div>
   <div class="doc" id="doc">
-    <span id="doc-name" class="doc-name">Untitled map</span><span id="doc-dirty" class="doc-dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" hidden></span><span id="doc-note" class="doc-note">Not saved</span>
+    <h1 id="doc-name" class="doc-name" tabindex="-1">Untitled map</h1><span id="doc-dirty" class="doc-dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" hidden></span><span id="doc-note" class="doc-note">Not saved</span>
   </div>
   <div class="toolbar" role="toolbar" aria-label="Map actions">
     <button id="randomize" class="tool" type="button" title="Random settings and seed">
@@ -293,6 +296,22 @@
   </aside>
 </main>
 
+<main class="start" id="start" aria-labelledby="start-title">
+  <div class="start-inner">
+    <div class="start-head">
+      <h1 id="start-title" tabindex="-1">Your maps</h1>
+      <span id="start-count" class="start-count"></span>
+      <button id="new-map" class="btn primary" type="button" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>New map</button>
+    </div>
+    <ul class="map-grid start-grid" id="start-list"></ul>
+    <div class="start-empty" id="start-empty" hidden>
+      <h2>No saved maps yet</h2>
+      <p>Start a new map from scratch or from a template. Maps you save appear here.</p>
+      <button id="new-map-empty" class="btn primary" type="button" aria-haspopup="dialog"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>New map</button>
+    </div>
+  </div>
+</main>
+
 <dialog class="dialog" id="save-dialog" aria-labelledby="save-title">
   <form class="dialog-form" id="save-form" method="dialog" novalidate>
     <header class="dialog-head">
@@ -333,6 +352,16 @@
     <div role="tabpanel" id="panel-templates" aria-labelledby="tab-templates" hidden>
       <ul class="map-grid" id="template-list"></ul>
     </div>
+  </div>
+</dialog>
+
+<dialog class="dialog dialog-wide" id="new-dialog" aria-labelledby="new-title">
+  <header class="dialog-head">
+    <h2 id="new-title">New map</h2>
+    <button class="tool icon-only" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </header>
+  <div class="dialog-body library-body">
+    <ul class="map-grid" id="new-list" aria-label="Start from"></ul>
   </div>
 </dialog>
 
