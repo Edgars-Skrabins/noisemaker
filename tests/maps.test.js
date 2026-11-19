@@ -190,12 +190,12 @@ test('fileSlug makes file-safe names', () => {
 
 test('formatEdited describes recent and older edits', () => {
   const now = new Date(2026, 10, 19, 15, 0, 0).getTime();
-  assert.equal(formatEdited(now - 10000, now), 'Just now');
+  assert.equal(formatEdited(now - 10000, now), 'just now');
   assert.equal(formatEdited(now - 5 * 60000, now), '5 min ago');
   assert.equal(formatEdited(now - 3 * 3600000, now), '3 h ago');
-  assert.equal(formatEdited(new Date(2026, 10, 18, 9, 0).getTime(), now), 'Yesterday');
+  assert.equal(formatEdited(new Date(2026, 10, 18, 9, 0).getTime(), now), 'yesterday');
   const older = new Date(2026, 10, 10, 12, 0).getTime();
-  assert.equal(formatEdited(older, now), new Date(older).toLocaleDateString());
+  assert.equal(formatEdited(older, now), 'on ' + new Date(older).toLocaleDateString());
 });
 
 test('loadCurrent gives a blank untitled map by default and on bad data', () => {

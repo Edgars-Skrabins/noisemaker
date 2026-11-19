@@ -38,13 +38,13 @@ export function fileSlug(name) {
 
 export function formatEdited(ts, now = Date.now()) {
   const diff = now - ts;
-  if (diff < MINUTE) return 'Just now';
+  if (diff < MINUTE) return 'just now';
   if (diff < HOUR) return `${Math.floor(diff / MINUTE)} min ago`;
   if (diff < DAY) return `${Math.floor(diff / HOUR)} h ago`;
   const day = new Date(now);
   day.setHours(0, 0, 0, 0);
-  if (ts >= day.getTime() - DAY) return 'Yesterday';
-  return new Date(ts).toLocaleDateString();
+  if (ts >= day.getTime() - DAY) return 'yesterday';
+  return 'on ' + new Date(ts).toLocaleDateString();
 }
 
 function defaultId() {

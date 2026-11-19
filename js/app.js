@@ -1,4 +1,4 @@
-import { DEFAULTS, NOISE_KEYS, VIEW_KEYS, noiseParams, newSeed, randomize } from './settings.js';
+import { DEFAULTS, NOISE_KEYS, noiseParams, newSeed, randomize } from './settings.js';
 import { PRESETS } from './presets.js';
 import { loadSettings, saveSettings } from './storage.js';
 import { postProcess } from './postprocess.js';
@@ -7,10 +7,23 @@ import { canvasBlob, encode, download, formatBytes } from './exporter.js';
 import { HELP } from './help.js';
 import { fitZoom, zoomIn, zoomOut, formatZoom, pointerToPixel, previewResolution } from './view.js';
 import { commitNumber, formatNumber } from './fields.js';
+import {
+  UNTITLED, mapSettings, isDirty, cleanName, copyName, fileSlug,
+  listMaps, getMap, createMap, overwriteMap, deleteMap, loadCurrent, saveCurrent,
+} from './maps.js';
+import { openDialog, confirmDialog } from './dialogs.js';
+import { renderSavedList, renderTemplateList } from './library.js';
 
-const THUMB_SIZE = 72;
+const THUMB_SIZE = 128;
+const THUMB_QUALITY = 0.85;
 const VIEW_PAD = 24;
 const TIP_DELAY = 350;
+const SAVE_ERRORS = {
+  name: 'Enter a name',
+  full: 'Browser storage is full. Delete some saved maps and try again.',
+  unavailable: 'Saving isn\'t available: this browser is blocking local storage.',
+  missing: 'This map no longer exists. Save it as a new map.',
+};
 const FORMAT_LABELS = { png: 'PNG', jpg: 'JPG', jpeg: 'JPEG', webp: 'WebP', bmp: 'BMP', tga: 'TGA', r16: 'RAW16' };
 
 const $ = (s, r = document) => r.querySelector(s);
@@ -33,7 +46,9 @@ let reqId = 0;
 let last = null;
 let lastOut = null;
 let regenTimer = 0;
-let activePreset = null;
+let current = loadCurrent(storage);
+let saving = false;
+let templatesBuilt = false;
 let toastTimer = 0;
 let progressTimer = 0;
 let zoom = 1;
@@ -52,6 +67,29 @@ const sctx = src.getContext('2d');
 
 function persist() {
   saveSettings(storage, state);
+  updateDoc();
+}
+
+function setCurrent(next) {
+  current = next;
+  saveCurrent(storage, current);
+  updateDoc();
+}
+
+function syncCurrent() {
+  if (!current.mapId) return;
+  const map = getMap(storage, current.mapId);
+  if (map) setCurrent({ mapId: map.id, template: null, name: map.name, base: map.settings });
+  else setCurrent({ ...current, mapId: null, template: null, base: null });
+}
+
+function updateDoc() {
+  const dirty = isDirty(state, current.base);
+  $('#doc-name').textContent = current.name;
+  $('#doc-name').title = current.name;
+  $('#doc-dirty').hidden = !dirty;
+  $('#doc-note').hidden = !!current.mapId;
+  document.title = `${dirty ? '• ' : ''}${current.name} — Noisemaker`;
 }
 
 function readInput(el) {
@@ -97,14 +135,6 @@ function matches(expr) {
 function updateVisibility() {
   $$('[data-show]').forEach((el) => {
     el.hidden = !matches(el.dataset.show);
-  });
-}
-
-function markPreset(i) {
-  activePreset = i;
-  $$('.preset').forEach((b, j) => {
-    b.classList.toggle('active', j === i);
-    b.setAttribute('aria-pressed', String(j === i));
   });
 }
 
@@ -218,7 +248,6 @@ function updateCursor() {
 }
 
 function onChange(key) {
-  if (!VIEW_KEYS.has(key)) markPreset(null);
   updateVisibility();
   updateStatusDoc();
   persist();
@@ -235,44 +264,6 @@ function setState(patch) {
   scheduleRegen();
 }
 
-function applyPreset(i) {
-  const keep = { size: state.size, format: state.format, quality: state.quality, tilePreview: state.tilePreview, seed: state.seed };
-  setState({ ...DEFAULTS, ...keep, ...PRESETS[i].settings });
-  markPreset(i);
-}
-
-async function buildPresets() {
-  const container = $('#presets');
-  const thumbs = PRESETS.map((preset, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'preset';
-    b.title = preset.name;
-    b.setAttribute('aria-pressed', 'false');
-    const canvas = document.createElement('canvas');
-    canvas.width = THUMB_SIZE;
-    canvas.height = THUMB_SIZE;
-    canvas.setAttribute('aria-hidden', 'true');
-    const label = document.createElement('span');
-    label.textContent = preset.name;
-    b.append(canvas, label);
-    b.addEventListener('click', () => applyPreset(i));
-    container.append(b);
-    return canvas;
-  });
-  const worker = new NoiseWorker();
-  try {
-    for (let i = 0; i < PRESETS.length; i++) {
-      const s = { ...DEFAULTS, ...PRESETS[i].settings };
-      const data = await worker.run(THUMB_SIZE, THUMB_SIZE, noiseParams(s));
-      const { rgba } = postProcess(data, THUMB_SIZE, THUMB_SIZE, s);
-      thumbs[i].getContext('2d').putImageData(new ImageData(rgba, THUMB_SIZE, THUMB_SIZE), 0, 0);
-    }
-  } finally {
-    worker.terminate();
-  }
-}
-
 async function render(settings, onProgress) {
   const size = settings.size;
   const worker = new NoiseWorker();
@@ -284,8 +275,11 @@ async function render(settings, onProgress) {
   }
 }
 
-function fileName(settings, presetIndex, ext) {
-  const label = presetIndex !== null ? PRESETS[presetIndex].name.toLowerCase() : settings.type;
+function fileLabel(settings) {
+  return (current.name !== UNTITLED && fileSlug(current.name)) || settings.type;
+}
+
+function fileName(settings, label, ext) {
   return `noisemaker_${label}_${settings.seed}_${settings.size}.${ext}`;
 }
 
@@ -308,18 +302,18 @@ async function withProgress(task) {
 
 async function doExport() {
   const settings = { ...state };
-  const presetIndex = activePreset;
+  const label = fileLabel(settings);
   const { size, format } = settings;
   try {
     await withProgress(async (progress) => {
       const out = await render(settings, progress);
       const blob = await encode(format, out, size, settings.quality);
       if (format === 'webp' && blob.type !== 'image/webp') {
-        download(blob, fileName(settings, presetIndex, 'png'));
+        download(blob, fileName(settings, label, 'png'));
         toast('This browser can\'t encode WebP, saved as PNG instead');
         return;
       }
-      download(blob, fileName(settings, presetIndex, format));
+      download(blob, fileName(settings, label, format));
       toast(`Exported ${size}×${size} ${format.toUpperCase()} · ${formatBytes(blob.size)}`);
     });
   } catch (err) {
@@ -345,6 +339,210 @@ async function doCopy() {
   } catch (err) {
     toast('Copy failed: ' + err.message);
   }
+}
+
+async function thumbImage(worker, settings) {
+  const data = await worker.run(THUMB_SIZE, THUMB_SIZE, noiseParams(settings));
+  return new ImageData(postProcess(data, THUMB_SIZE, THUMB_SIZE, settings).rgba, THUMB_SIZE, THUMB_SIZE);
+}
+
+async function thumbnail(settings) {
+  const worker = new NoiseWorker();
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = THUMB_SIZE;
+    canvas.height = THUMB_SIZE;
+    canvas.getContext('2d').putImageData(await thumbImage(worker, settings), 0, 0);
+    return canvas.toDataURL('image/jpeg', THUMB_QUALITY);
+  } finally {
+    worker.terminate();
+  }
+}
+
+function commitFocusedField() {
+  const el = document.activeElement;
+  if (el && el.matches && el.matches('.num')) commitField(el);
+}
+
+function saveMode() {
+  return $('#save-overwrite').checked && !$('#save-choice').hidden ? 'overwrite' : 'new';
+}
+
+function setSaveError(code) {
+  $('#save-error').textContent = code ? SAVE_ERRORS[code] : '';
+  $('#save-name').setAttribute('aria-invalid', String(code === 'name'));
+}
+
+function syncSaveMode() {
+  const name = $('#save-name');
+  name.disabled = saveMode() === 'overwrite';
+  setSaveError(null);
+}
+
+function openSave() {
+  if (saving) return;
+  commitFocusedField();
+  hideTip();
+  syncCurrent();
+  const saved = current.mapId ? getMap(storage, current.mapId) : null;
+  const name = $('#save-name');
+  $('#save-choice').hidden = !saved;
+  if (saved) {
+    $('#save-overwrite-text').textContent = `Overwrite “${saved.name}”`;
+    $('#save-overwrite').checked = true;
+    name.value = copyName(saved.name);
+  } else {
+    $('#save-new').checked = true;
+    name.value = current.name;
+  }
+  syncSaveMode();
+  $('#save-submit').disabled = false;
+  openDialog($('#save-dialog'), { opener: $('#save-map'), focus: saved ? $('#save-overwrite') : name });
+  if (!saved) name.select();
+}
+
+async function submitSave() {
+  if (saving) return;
+  const mode = saveMode();
+  const name = cleanName($('#save-name').value);
+  if (mode === 'new' && !name) {
+    setSaveError('name');
+    $('#save-name').focus();
+    return;
+  }
+  const settings = mapSettings(state);
+  saving = true;
+  $('#save-submit').disabled = true;
+  let res;
+  try {
+    const thumb = await thumbnail(settings);
+    if (!$('#save-dialog').open) return;
+    res = mode === 'overwrite'
+      ? overwriteMap(storage, current.mapId, { settings, thumb })
+      : createMap(storage, { name, settings, thumb });
+  } catch (err) {
+    res = { ok: false, error: 'unavailable', message: err.message };
+  } finally {
+    saving = false;
+    $('#save-submit').disabled = false;
+  }
+  if (!res.ok) {
+    if (res.error === 'missing') {
+      setCurrent({ ...current, mapId: null, template: null, base: null });
+      $('#save-new').checked = true;
+      syncSaveMode();
+    }
+    setSaveError(res.error);
+    return;
+  }
+  setCurrent({ mapId: res.map.id, template: null, name: res.map.name, base: res.map.settings });
+  $('#save-dialog').close('saved');
+  toast(`Saved “${res.map.name}”`);
+}
+
+async function confirmDiscard(opener) {
+  if (!isDirty(state, current.base)) return true;
+  return confirmDialog({
+    title: 'Unsaved changes',
+    message: `Discard unsaved changes to “${current.name}”?`,
+    confirm: 'Discard changes',
+    opener,
+  });
+}
+
+function applyMap(settings) {
+  setState({ ...mapSettings(settings), tilePreview: state.tilePreview });
+}
+
+function loadTemplate(i) {
+  const preset = PRESETS[i];
+  const keep = { size: state.size, format: state.format, quality: state.quality };
+  const settings = mapSettings({ ...DEFAULTS, ...preset.settings, ...keep });
+  setCurrent({ mapId: null, template: preset.name, name: preset.name, base: settings });
+  applyMap(settings);
+}
+
+function loadSaved(map) {
+  const fresh = getMap(storage, map.id) || map;
+  setCurrent({ mapId: fresh.id, template: null, name: fresh.name, base: fresh.settings });
+  applyMap(fresh.settings);
+}
+
+async function chooseSaved(map, btn) {
+  if (!(await confirmDiscard(btn))) return;
+  loadSaved(map);
+  $('#load-dialog').close('loaded');
+}
+
+async function chooseTemplate(i, btn) {
+  if (!(await confirmDiscard(btn))) return;
+  loadTemplate(i);
+  $('#load-dialog').close('loaded');
+}
+
+async function removeSaved(map, btn) {
+  const ok = await confirmDialog({
+    title: 'Delete map',
+    message: `Delete “${map.name}”? This can't be undone.`,
+    confirm: 'Delete',
+    opener: btn,
+  });
+  if (!ok) return;
+  const res = deleteMap(storage, map.id);
+  if (!res.ok) {
+    toast('Couldn\'t delete: browser storage is unavailable');
+    return;
+  }
+  if (map.id === current.mapId) setCurrent({ ...current, mapId: null, template: null, base: null });
+  renderSaved();
+  $('#tab-saved').focus();
+}
+
+function renderSaved() {
+  renderSavedList($('#saved-list'), listMaps(storage), {
+    currentId: current.mapId,
+    onOpen: chooseSaved,
+    onDelete: removeSaved,
+  });
+}
+
+function selectTab(name, focus = false) {
+  [['saved', $('#tab-saved'), $('#panel-saved')], ['templates', $('#tab-templates'), $('#panel-templates')]].forEach(([n, tab, panel]) => {
+    const on = n === name;
+    tab.setAttribute('aria-selected', String(on));
+    tab.tabIndex = on ? 0 : -1;
+    panel.hidden = !on;
+    if (on && focus) tab.focus();
+  });
+}
+
+async function buildTemplates() {
+  if (templatesBuilt) return;
+  templatesBuilt = true;
+  const canvases = renderTemplateList($('#template-list'), PRESETS, { size: THUMB_SIZE, onOpen: chooseTemplate });
+  const worker = new NoiseWorker();
+  try {
+    for (let i = 0; i < PRESETS.length; i++) {
+      const s = { ...DEFAULTS, ...PRESETS[i].settings };
+      canvases[i].getContext('2d').putImageData(await thumbImage(worker, s), 0, 0);
+    }
+  } finally {
+    worker.terminate();
+  }
+}
+
+function openLoad() {
+  hideTip();
+  syncCurrent();
+  renderSaved();
+  const hasSaved = listMaps(storage).length > 0;
+  selectTab(hasSaved ? 'saved' : 'templates');
+  const dialog = $('#load-dialog');
+  openDialog(dialog, { opener: $('#load-map'), focus: hasSaved ? $('#tab-saved') : $('#tab-templates') });
+}
+
+function dialogOpen() {
+  return !!document.querySelector('dialog[open]');
 }
 
 function toast(msg) {
@@ -493,13 +691,24 @@ function bind() {
   });
 
   $('#reseed').addEventListener('click', () => setState({ seed: newSeed() }));
-  $('#randomize').addEventListener('click', () => {
-    markPreset(null);
-    setState(randomize());
+  $('#randomize').addEventListener('click', () => setState(randomize()));
+  $('#reset').addEventListener('click', () => setState({ ...DEFAULTS }));
+  $('#save-map').addEventListener('click', openSave);
+  $('#load-map').addEventListener('click', openLoad);
+  $('#save-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitSave();
   });
-  $('#reset').addEventListener('click', () => {
-    markPreset(null);
-    setState({ ...DEFAULTS });
+  $$('input[name="save-mode"]').forEach((r) => r.addEventListener('change', syncSaveMode));
+  $('#save-name').addEventListener('input', () => setSaveError(null));
+  $('#tab-saved').addEventListener('click', () => selectTab('saved'));
+  $('#tab-templates').addEventListener('click', () => selectTab('templates'));
+  $('.tabs').addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      const toSaved = e.key === 'Home' || (e.key !== 'End' && $('#tab-templates').getAttribute('aria-selected') === 'true');
+      selectTab(toSaved ? 'saved' : 'templates', true);
+    }
   });
   $('#download').addEventListener('click', doExport);
   $('#copy').addEventListener('click', doCopy);
@@ -521,6 +730,12 @@ function bind() {
   viewport.addEventListener('scroll', () => { if (pointer) updateCursor(); }, { passive: true });
 
   document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.key === 's' || e.key === 'S')) {
+      e.preventDefault();
+      if (!dialogOpen()) openSave();
+      return;
+    }
+    if (dialogOpen()) return;
     if (e.key === 'Escape' && tipButton) {
       hideTip();
       return;
@@ -541,9 +756,11 @@ function bind() {
 }
 
 setupHelp();
+syncCurrent();
 writeControls();
+updateDoc();
 bind();
 layout();
 updateCursor();
 regen();
-buildPresets().catch((err) => toast('Preset thumbnails failed: ' + err.message));
+buildTemplates().catch((err) => toast('Template thumbnails failed: ' + err.message));

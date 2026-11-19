@@ -20,7 +20,7 @@ So far Noisemaker only remembers the last used settings. This spec lets users ke
      - If browser storage is full, the dialog stays open with "Browser storage is full. Delete some saved maps and try again." If storage is unavailable (blocked by the browser), it says "Saving isn't available: this browser is blocking local storage." If the map to overwrite was deleted in another tab, it says "This map no longer exists. Save it as a new map." and switches the choice to Save as new.
      - On success a toast says "Saved “<name>”".
   4. **Load map** opens a "Load map" dialog with two tabs: "Saved maps" and "Templates". It opens on Saved maps when there is at least one, otherwise on Templates.
-     - Saved maps: a grid of cards, newest edit first, each with the thumbnail, the name and "Edited <when>" ("Just now", "5 min ago", "3 h ago", "Yesterday", or a date). The map currently open is marked "Open". Each card has a delete button (trash icon, "Delete <name>"). Empty state: "No saved maps yet. Use Save or Ctrl+S to keep the current map."
+     - Saved maps: a grid of cards, newest edit first, each with the thumbnail, the name and "Edited <when>" ("Edited just now", "Edited 5 min ago", "Edited 3 h ago", "Edited yesterday", or "Edited on <date>"). The map currently open is marked "Open". Each card has a delete button (trash icon, "Delete <name>"). Empty state: "No saved maps yet. Use Save or Ctrl+S to keep the current map."
      - Templates: the nine presets (Clouds, Terrain, Mountains, Marble, Smoke, Cells, Cracks, Stone, Static) as cards with thumbnail and name.
      - Choosing a card loads it into the editor and closes the dialog. A saved map loads exactly as saved. A template starts a new, never-saved map from the template's settings on the default seed (so it matches its thumbnail), keeping the current export resolution, format, quality and Tile 2×2 view.
      - If the current map has unsaved changes, choosing a card first asks "Discard unsaved changes to “<name>”?" with "Cancel" and "Discard changes". Cancel keeps everything as it is.
@@ -50,7 +50,7 @@ Plain HTML, CSS and ES modules as before; native `<dialog>` with `showModal()` f
 - `cleanName(raw)`: string, trimmed, whitespace collapsed, cut to `NAME_MAX`; `''` when nothing is left.
 - `copyName(name)`: `cleanName(name + ' copy')`, cutting the original so " copy" fits.
 - `fileSlug(name)`: lowercase, runs of non `[a-z0-9]` → `_`, trimmed of `_`.
-- `formatEdited(ts, now)`: "Just now" (< 1 min), "N min ago" (< 1 h), "N h ago" (< 24 h, same or not), "Yesterday" (previous calendar day), else `new Date(ts).toLocaleDateString()`.
+- `formatEdited(ts, now)`: "just now" (< 1 min), "N min ago" (< 1 h), "N h ago" (< 24 h), "yesterday" (previous calendar day), else "on " + `new Date(ts).toLocaleDateString()`; shown after "Edited ".
 - `listMaps(storage)`: cleaned saved maps sorted as in the rules; `[]` on missing, unreadable or non-array data.
 - `getMap(storage, id)`: the cleaned map or `null`.
 - `createMap(storage, { name, settings, thumb }, { now = Date.now(), makeId })`: `{ ok: true, map }` or `{ ok: false, error }` with `error` one of `'name'` (empty after cleaning), `'full'` (quota exceeded), `'unavailable'` (storage missing or throwing otherwise). `makeId` defaults to `crypto.randomUUID()` with a time+random fallback.
@@ -62,7 +62,7 @@ Plain HTML, CSS and ES modules as before; native `<dialog>` with `showModal()` f
 **New UI module: `js/library.js`** (DOM, reusable by the start screen)
 - `mapCard({ name, meta, thumb, open })`: builds the card `<li class="map-card">` containing a `<button class="map-open">` (thumbnail `<img>` or `<canvas>`, name, meta line) and returns `{ item, open, thumbSlot }` so callers add handlers and extra buttons.
 - `renderSavedList(list, maps, { currentId, now, onOpen, onDelete })`: fills a `<ul>` with saved-map cards (with "Open" badge and delete button) or the empty state.
-- `renderTemplateList(list, templates, { onOpen })`: fills a `<ul>` with template cards whose thumbnails are `<canvas>` elements returned for drawing.
+- `renderTemplateList(list, templates, { size, onOpen })`: fills a `<ul>` with template cards (thumbnail and name only) whose thumbnails are `<canvas>` elements returned for drawing.
 
 **New UI module: `js/dialogs.js`**
 - `openDialog(dialog, { opener })`: `showModal()`, remembers the opener and restores focus to it on close, keeps Tab inside the dialog (wrap from last to first focusable and back), closes on Escape via the native `cancel` event.
@@ -123,10 +123,10 @@ Baseline before starting: 53 tests passing.
 - [x] B2. `css/style.css`: doc title, end toolbar, dialogs, tabs, map cards, errors, narrow layout; remove the preset styles.
 
 ### C. Editor wiring
-- [ ] C1. `js/dialogs.js` (`openDialog`, `confirmDialog`) and `js/library.js` (`mapCard`, `renderSavedList`, `renderTemplateList`).
-- [ ] C2. `js/app.js`: `current` state and persistence, `updateDoc`, removal of the preset code, file names from the map name.
-- [ ] C3. `js/app.js`: Save dialog flow (new, overwrite, save as new, errors, thumbnails) and Cmd/Ctrl+S.
-- [ ] C4. `js/app.js`: Load dialog flow (tabs, saved list, templates, discard confirmation, delete confirmation, deleting the open map).
+- [x] C1. `js/dialogs.js` (`openDialog`, `confirmDialog`) and `js/library.js` (`mapCard`, `renderSavedList`, `renderTemplateList`).
+- [x] C2. `js/app.js`: `current` state and persistence, `updateDoc`, removal of the preset code, file names from the map name.
+- [x] C3. `js/app.js`: Save dialog flow (new, overwrite, save as new, errors, thumbnails) and Cmd/Ctrl+S.
+- [x] C4. `js/app.js`: Load dialog flow (tabs, saved list, templates, discard confirmation, delete confirmation, deleting the open map).
 
 ### D. Docs
 - [ ] D1. Update `README.md`, `CLAUDE.md`, `PRODUCT.md` and `DESIGN.md` as in 2.2.
