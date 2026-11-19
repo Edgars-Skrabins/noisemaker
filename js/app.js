@@ -2,7 +2,7 @@ import { DEFAULTS, NOISE_KEYS, VIEW_KEYS, noiseParams, newSeed, randomize } from
 import { PRESETS } from './presets.js';
 import { loadSettings, saveSettings } from './storage.js';
 import { postProcess } from './postprocess.js';
-import { createNoiseWorker, runWorker } from './worker-client.js';
+import { NoiseWorker, CancelledError } from './worker-client.js';
 import { canvasBlob, encode, download, formatBytes } from './exporter.js';
 
 const PREVIEW_MAX = 512;
@@ -28,6 +28,7 @@ let last = null;
 let regenTimer = 0;
 let activePreset = null;
 let toastTimer = 0;
+let progressTimer = 0;
 
 const view = $('#view');
 const vctx = view.getContext('2d');
@@ -104,15 +105,15 @@ async function regen() {
     previewWorker.terminate();
     previewWorker = null;
   }
-  if (!previewWorker) previewWorker = createNoiseWorker();
+  if (!previewWorker) previewWorker = new NoiseWorker();
   const id = ++reqId;
   previewBusy = true;
   $('#busy').classList.add('on');
   let data;
   try {
-    data = await runWorker(previewWorker, id, res, res, noiseParams(state));
+    data = await previewWorker.run(res, res, noiseParams(state));
   } catch (err) {
-    if (id !== reqId) return;
+    if (err instanceof CancelledError || id !== reqId) return;
     previewBusy = false;
     $('#busy').classList.remove('on');
     toast('Preview failed: ' + err.message);
@@ -180,11 +181,11 @@ async function buildPresets() {
     container.append(b);
     return canvas;
   });
-  const worker = createNoiseWorker();
+  const worker = new NoiseWorker();
   try {
     for (let i = 0; i < PRESETS.length; i++) {
       const s = { ...DEFAULTS, ...PRESETS[i].settings };
-      const data = await runWorker(worker, i, THUMB_SIZE, THUMB_SIZE, noiseParams(s));
+      const data = await worker.run(THUMB_SIZE, THUMB_SIZE, noiseParams(s));
       const { rgba } = postProcess(data, THUMB_SIZE, THUMB_SIZE, s);
       thumbs[i].getContext('2d').putImageData(new ImageData(rgba, THUMB_SIZE, THUMB_SIZE), 0, 0);
     }
@@ -193,25 +194,27 @@ async function buildPresets() {
   }
 }
 
-async function render(size, onProgress) {
-  const worker = createNoiseWorker();
+async function render(settings, onProgress) {
+  const size = settings.size;
+  const worker = new NoiseWorker();
   try {
-    const data = await runWorker(worker, 1, size, size, noiseParams({ ...state, size }), onProgress);
-    return postProcess(data, size, size, state);
+    const data = await worker.run(size, size, noiseParams(settings), onProgress);
+    return postProcess(data, size, size, settings);
   } finally {
     worker.terminate();
   }
 }
 
-function fileName(ext) {
-  const label = activePreset !== null ? PRESETS[activePreset].name.toLowerCase() : state.type;
-  return `noisemaker_${label}_${state.seed}_${state.size}.${ext}`;
+function fileName(settings, presetIndex, ext) {
+  const label = presetIndex !== null ? PRESETS[presetIndex].name.toLowerCase() : settings.type;
+  return `noisemaker_${label}_${settings.seed}_${settings.size}.${ext}`;
 }
 
 async function withProgress(task) {
   const bar = $('#progress');
   const fill = bar.firstElementChild;
   const buttons = [$('#download'), $('#copy')];
+  clearTimeout(progressTimer);
   buttons.forEach((b) => { b.disabled = true; });
   bar.hidden = false;
   fill.style.width = '2%';
@@ -219,25 +222,26 @@ async function withProgress(task) {
     return await task((p) => { fill.style.width = Math.max(2, p * 100) + '%'; });
   } finally {
     fill.style.width = '100%';
-    setTimeout(() => { bar.hidden = true; fill.style.width = '0'; }, 300);
+    progressTimer = setTimeout(() => { bar.hidden = true; fill.style.width = '0'; }, 300);
     buttons.forEach((b) => { b.disabled = false; });
   }
 }
 
 async function doExport() {
-  const size = state.size;
-  const fmt = state.format;
+  const settings = { ...state };
+  const presetIndex = activePreset;
+  const { size, format } = settings;
   try {
     await withProgress(async (progress) => {
-      const out = await render(size, progress);
-      const blob = await encode(fmt, out, size, state.quality);
-      if (fmt === 'webp' && blob.type !== 'image/webp') {
-        download(blob, fileName('png'));
+      const out = await render(settings, progress);
+      const blob = await encode(format, out, size, settings.quality);
+      if (format === 'webp' && blob.type !== 'image/webp') {
+        download(blob, fileName(settings, presetIndex, 'png'));
         toast('This browser can\'t encode WebP, saved as PNG instead');
         return;
       }
-      download(blob, fileName(fmt));
-      toast(`Exported ${size}×${size} ${fmt.toUpperCase()} · ${formatBytes(blob.size)}`);
+      download(blob, fileName(settings, presetIndex, format));
+      toast(`Exported ${size}×${size} ${format.toUpperCase()} · ${formatBytes(blob.size)}`);
     });
   } catch (err) {
     toast('Export failed: ' + err.message);
@@ -249,14 +253,16 @@ async function doCopy() {
     toast('Clipboard images aren\'t supported in this browser');
     return;
   }
+  const settings = { ...state };
+  const size = settings.size;
+  const blob = withProgress(async (progress) => {
+    const out = await render(settings, progress);
+    return canvasBlob(out.rgba, size, size, 'image/png');
+  });
+  blob.catch(() => {});
   try {
-    await withProgress(async (progress) => {
-      const size = state.size;
-      const out = await render(size, progress);
-      const blob = await canvasBlob(out.rgba, size, size, 'image/png');
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-      toast(`Copied ${size}×${size} PNG to clipboard`);
-    });
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    toast(`Copied ${size}×${size} PNG to clipboard`);
   } catch (err) {
     toast('Copy failed: ' + err.message);
   }
