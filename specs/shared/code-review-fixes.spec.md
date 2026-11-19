@@ -36,7 +36,7 @@ No new dependencies.
 
 **`js/maps.js`**
 - `THUMB_MAX = 200000`. `cleanMap` keeps `thumb` only if it starts with `data:image/jpeg;base64,` or `data:image/png;base64,` and is at most `THUMB_MAX` long.
-- The never-read `template` field is removed from `current` (`defaultCurrent`, `loadCurrent`, `startMap`). Stored current maps with the field still load; it is ignored. `specs/shared/saved-maps.spec.md` and `start-screen.spec.md` are updated to match, with a note.
+- The never-read `template` field is removed from `current` (`defaultCurrent`, `loadCurrent`, `startMap`). Stored current maps with the field still load; it is ignored. The saved-maps and start-screen specs are `done` and stay as written; this spec records the removal.
 
 **New `js/visibility.js`**: `matches(expr, state)`, the `data-show` parser (`&` joins clauses, `k=v` / `k!=v`, `|` separates allowed values), moved from `app.js`.
 
@@ -57,6 +57,7 @@ No new dependencies.
 - `clearEditor` clears `#view`.
 - Helpers: `attachMap(map)` and `detachCurrent()` replace the repeated `setCurrent` objects; `stopPreview()` replaces the duplicated worker shutdown.
 - `bind()` is split into `bindFields`, `bindDocument`, `bindDialogs`, `bindZoom` and `bindShortcuts`.
+- `setupHelp(HELP, { tip, scrollers })` receives the tooltip element and the dock to close it on scroll; the Escape shortcut closes the tooltip when `hideTip()` reports one was open.
 - The export toast uses `FORMAT_LABELS`.
 
 **`js/help.js`**: corrected `size` text.
@@ -73,26 +74,26 @@ No new dependencies.
 
 # Part 3 — TODO
 
-- [ ] **Bugs**
-  - [ ] Hash change ignored while a dialog is open; `confirmDialog` refuses a second open
-  - [ ] Save: cancel on dialog close, `thumb` error code and message
-  - [ ] Storage-full toast
-  - [ ] Clear the canvas in `clearEditor`
-  - [ ] Help text and export toast label
-  - [ ] Run tests
-- [ ] **Hardening**
-  - [ ] CSP meta and `js/boot.js`
-  - [ ] Thumbnail data URL rules with tests
-  - [ ] Run tests
-- [ ] **Clean code**
-  - [ ] `attachMap`, `detachCurrent`, `stopPreview`; drop `template` and update the older specs
-  - [ ] Move `matches` to `js/visibility.js` with tests
-  - [ ] Move tooltip code to `js/tooltip.js`
-  - [ ] Split `bind()`
-  - [ ] `THUMB_SIZE`, `NAME_MAX` from one place; drop dead exports and `VIEW_KEYS`
-  - [ ] CSS colour tokens
-  - [ ] HTML consistency test; test cleanups; `CLAUDE.md`
-  - [ ] Run tests
-- [ ] **Wrap-up**
-  - [ ] Check every flow in the browser with no console errors or CSP violations
-  - [ ] Open the pull request
+- [x] **Bugs**
+  - [x] Hash change ignored while a dialog is open; `confirmDialog` refuses a second open
+  - [x] Save: cancel on dialog close, `thumb` error code and message
+  - [x] Storage-full toast
+  - [x] Clear the canvas in `clearEditor`
+  - [x] Help text and export toast label
+  - [x] Run tests
+- [x] **Hardening**
+  - [x] CSP meta and `js/boot.js`
+  - [x] Thumbnail data URL rules with tests
+  - [x] Run tests
+- [x] **Clean code**
+  - [x] `attachMap`, `detachCurrent`, `stopPreview`; drop `template`
+  - [x] Move `matches` to `js/visibility.js` with tests
+  - [x] Move tooltip code to `js/tooltip.js`
+  - [x] Split `bind()`
+  - [x] `THUMB_SIZE`, `NAME_MAX` from one place; drop dead exports and `VIEW_KEYS`
+  - [x] CSS colour tokens
+  - [x] HTML consistency test; test cleanups; `CLAUDE.md`
+  - [x] Run tests
+- [x] **Wrap-up**
+  - [x] Check every flow in the browser with no console errors or CSP violations
+  - [x] Open the pull request
