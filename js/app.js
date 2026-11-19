@@ -15,13 +15,15 @@ import {
 } from './maps.js';
 import { openDialog, confirmDialog } from './dialogs.js';
 import { THUMB_SIZE, renderSavedList, renderTemplateList } from './library.js';
+import { stepSummary } from './summary.js';
+import { makeSheet, syncSheet, shuffleSheet } from './sheet.js';
 
 const EDITOR_HASH = '#editor';
 const BLANK = { name: 'Blank', settings: {} };
 const STARTS = [BLANK, ...PRESETS];
 
 const THUMB_QUALITY = 0.85;
-const VIEW_PAD = 24;
+const SHEET_SIZE = 160;
 const SAVE_ERRORS = {
   name: 'Enter a name',
   full: 'Browser storage is full. Delete some saved maps and try again.',
@@ -64,10 +66,16 @@ let progressTimer = 0;
 let zoom = 1;
 let fitMode = true;
 let pointer = null;
+let sheetSeeds = makeSheet(state.seed);
+let sheetCache = { key: '', data: new Map() };
+let sheetWorker = null;
+let sheetId = 0;
+let sheetTimer = 0;
 
 const view = $('#view');
 const vctx = view.getContext('2d');
 const viewport = $('#viewport');
+const print = $('#print');
 const src = document.createElement('canvas');
 const sctx = src.getContext('2d');
 
@@ -141,6 +149,14 @@ function writeControls() {
   });
   updateVisibility();
   updateStatusDoc();
+  updateSummaries();
+  syncSheetSeeds();
+}
+
+function updateSummaries() {
+  $$('[data-sum]').forEach((el) => {
+    el.textContent = stepSummary(el.dataset.sum, state);
+  });
 }
 
 function updateVisibility() {
@@ -196,6 +212,7 @@ async function regen() {
   setBusy(false);
   last = { data, res };
   draw();
+  scheduleSheet();
 }
 
 function tiles() {
@@ -215,12 +232,30 @@ function draw() {
   for (let i = 0; i < n * n; i++) vctx.drawImage(src, (i % n) * res, Math.floor(i / n) * res);
   layout();
   updateCursor();
+  drawSheet();
+}
+
+function boxPad(el) {
+  const cs = getComputedStyle(el);
+  return [
+    parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight),
+    parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom),
+  ];
+}
+
+function fitArea() {
+  const [vx, vy] = boxPad(viewport);
+  const [mx, my] = boxPad(print);
+  return [viewport.clientWidth - vx - mx, viewport.clientHeight - vy - my];
 }
 
 function layout() {
   if (screen !== 'editor') return;
   const doc = state.size * tiles();
-  if (fitMode) zoom = fitZoom(viewport.clientWidth, viewport.clientHeight, doc, doc, VIEW_PAD);
+  if (fitMode) {
+    const [w, h] = fitArea();
+    zoom = fitZoom(w, h, doc, doc);
+  }
   const px = Math.max(1, Math.round(doc * zoom));
   view.style.width = px + 'px';
   view.style.height = px + 'px';
@@ -265,10 +300,121 @@ function updateCursor() {
 function onChange(key) {
   updateVisibility();
   updateStatusDoc();
+  updateSummaries();
+  if (key === 'seed') syncSheetSeeds();
   persist();
   if (key === 'size' || key === 'tilePreview') layout();
   if (NOISE_KEYS.has(key)) scheduleRegen();
   else if (key !== 'format' && key !== 'quality') draw();
+}
+
+function sheetKey() {
+  const { seed, size, ...rest } = noiseParams(state);
+  return JSON.stringify(rest);
+}
+
+function frameFor(seed) {
+  return $(`.frame[data-seed="${seed}"]`);
+}
+
+function drawFrame(seed) {
+  const data = sheetCache.data.get(seed);
+  const frame = frameFor(seed);
+  if (!data || !frame) return;
+  const { rgba } = postProcess(data, SHEET_SIZE, SHEET_SIZE, state);
+  frame.querySelector('canvas').getContext('2d').putImageData(new ImageData(rgba, SHEET_SIZE, SHEET_SIZE), 0, 0);
+}
+
+function drawSheet() {
+  if (sheetCache.key !== sheetKey()) return;
+  sheetSeeds.forEach(drawFrame);
+}
+
+function markSheet() {
+  $$('.frame').forEach((frame) => {
+    frame.setAttribute('aria-pressed', String(Number(frame.dataset.seed) === state.seed));
+  });
+}
+
+function buildSheet() {
+  $('#sheet-list').replaceChildren(...sheetSeeds.map((seed) => {
+    const item = document.createElement('li');
+    const frame = document.createElement('button');
+    frame.type = 'button';
+    frame.className = 'frame';
+    frame.dataset.seed = String(seed);
+    frame.setAttribute('aria-label', `Use seed ${seed}`);
+    const canvas = document.createElement('canvas');
+    canvas.width = SHEET_SIZE;
+    canvas.height = SHEET_SIZE;
+    canvas.setAttribute('aria-hidden', 'true');
+    const label = document.createElement('span');
+    label.className = 'frame-seed';
+    label.setAttribute('aria-hidden', 'true');
+    label.textContent = `#${seed}`;
+    frame.append(canvas, label);
+    frame.addEventListener('click', () => {
+      if (seed !== state.seed) setState({ seed });
+    });
+    item.append(frame);
+    return item;
+  }));
+  markSheet();
+  drawSheet();
+}
+
+function syncSheetSeeds() {
+  const next = syncSheet(sheetSeeds, state.seed);
+  if (next === sheetSeeds) {
+    markSheet();
+    return;
+  }
+  sheetSeeds = next;
+  buildSheet();
+}
+
+function stopSheet() {
+  if (!sheetWorker) return;
+  sheetWorker.terminate();
+  sheetWorker = null;
+}
+
+function scheduleSheet() {
+  clearTimeout(sheetTimer);
+  sheetTimer = setTimeout(renderSheet, 60);
+}
+
+async function renderSheet() {
+  if (screen !== 'editor') return;
+  const key = sheetKey();
+  if (key !== sheetCache.key) sheetCache = { key, data: new Map() };
+  const cache = sheetCache;
+  const params = noiseParams(state);
+  const id = ++sheetId;
+  stopSheet();
+  drawSheet();
+  const todo = sheetSeeds.filter((seed) => !cache.data.has(seed));
+  if (!todo.length) return;
+  const worker = new NoiseWorker();
+  sheetWorker = worker;
+  try {
+    for (const seed of todo) {
+      const data = await worker.run(SHEET_SIZE, SHEET_SIZE, { ...params, seed });
+      if (id !== sheetId) return;
+      cache.data.set(seed, data);
+      if (cache === sheetCache) drawFrame(seed);
+    }
+  } catch (err) {
+    if (!(err instanceof CancelledError) && id === sheetId) toast('Contact sheet failed: ' + err.message);
+  } finally {
+    if (sheetWorker === worker) stopSheet();
+  }
+}
+
+function shuffle() {
+  sheetSeeds = shuffleSheet(sheetSeeds, state.seed);
+  buildSheet();
+  scheduleSheet();
 }
 
 function setState(patch) {
@@ -593,11 +739,11 @@ function showScreen(name, { focus = true } = {}) {
   document.documentElement.dataset.screen = name;
   setHash(name);
   hideTip();
-  $('#home').disabled = name === 'start';
   if (name === 'editor') {
     updateDoc();
     layout();
     if (!last && !previewBusy) scheduleRegen();
+    else scheduleSheet();
     if (focus) $('#doc-name').focus();
   } else {
     document.title = 'Noisemaker';
@@ -761,6 +907,7 @@ function bindDocument() {
   });
   $('#download').addEventListener('click', doExport);
   $('#copy').addEventListener('click', doCopy);
+  $('#shuffle').addEventListener('click', shuffle);
 }
 
 function bindDialogs() {
@@ -825,9 +972,10 @@ function bindShortcuts() {
   });
 }
 
-setupHelp(HELP, { tip: $('#tooltip'), scrollers: [$('.dock')] });
+setupHelp(HELP, { tip: $('#tooltip'), scrollers: [$('.steps')] });
 $('#save-name').maxLength = NAME_MAX;
 syncCurrent();
+buildSheet();
 writeControls();
 updateDoc();
 bindFields();
