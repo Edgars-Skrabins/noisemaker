@@ -1,0 +1,10 @@
+{
+  "name": "noisemaker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Generate seamlessly tileable grayscale noise maps in the browser.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}
