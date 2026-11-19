@@ -1054,6 +1054,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
     height: auto;
     min-height: 100vh;
     min-height: 100dvh;
+    overflow-x: clip;
   }
   .side-head, .steps, .side-foot { border-right: 0; }
   .side-head { padding: 10px 16px 14px; }
