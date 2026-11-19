@@ -34,7 +34,7 @@ Plain HTML, CSS and ES modules as before. No new dependencies. The Google Fonts 
 
 **New pure modules (no DOM, tested under Node):**
 - `js/help.js`: `HELP`, a frozen object mapping every setting key (`type`, `seed`, `scale`, `tileable`, `cell`, `metric`, `jitter`, `fractal`, `octaves`, `lacunarity`, `gain`, `warp`, `contrast`, `brightness`, `steps`, `invert`, `normalize`, `tilePreview`, `size`, `format`, `quality`) to one or two short sentences.
-- `js/view.js`: `ZOOM_STEPS` (0.0625 … 16), `fitZoom(viewW, viewH, imageW, imageH, pad)` (largest zoom that fits, capped at the max step, at least the min step), `zoomIn(z)` / `zoomOut(z)` (next step above/below the current zoom, also from an off-step fit zoom), `formatZoom(z)` (e.g. `"50%"`, `"12.5%"`, `"1600%"`), and `pointerToPixel(px, py, displayW, displayH, srcW, srcH)` returning the preview pixel under a pointer (with 2×2 tiling the point is wrapped into the single tile) or `null` outside.
+- `js/view.js`: `ZOOM_STEPS` (0.0625 … 16), `fitZoom(viewW, viewH, imageW, imageH, pad)` (largest zoom that fits, capped at the max step, at least the min step), `zoomIn(z)` / `zoomOut(z)` (next step above/below the current zoom, also from an off-step fit zoom), `formatZoom(z)` (e.g. `"50%"`, `"12.5%"`, `"1600%"`), `previewResolution(size, zoom, fit, tiles)` (the preview size to render, see D8), and `pointerToPixel(px, py, displayW, displayH, srcW, srcH)` returning the preview pixel under a pointer (with 2×2 tiling the point is wrapped into the single tile) or `null` outside.
 - `js/fields.js`: `decimalsFor(step)` and `commitNumber(text, min, max, step, fallback)`: parse a typed value, return `fallback` when it isn't a finite number, otherwise clamp to `[min, max]`, snap to the step grid from `min` and round to the step's decimals. Also `formatNumber(value, step)`.
 
 **Changed files:**
@@ -67,7 +67,7 @@ Plain HTML, CSS and ES modules as before. No new dependencies. The Google Fonts 
 5. Type: system UI stack (`system-ui, -apple-system, "Segoe UI", Roboto, sans-serif`), 12 px base for property rows, 11 px for panel headers (semibold, not uppercase) and status bar, 13 px for the brand; `font-variant-numeric: tabular-nums` on numeric fields and readouts. No Google Fonts.
 6. Shape and depth: radius 3 px on controls, 2 px on segmented buttons, 0 on panels; elevation by 1 px borders only, a soft shadow only on the canvas, tooltip and toast.
 7. Panels are `<details>`/`<summary>` for native accessible collapsing. Collapsed state is not persisted (later specs may add it).
-8. Zoom is relative to the export resolution (100% = one export pixel per screen pixel), matching how Photoshop reports document zoom; the preview stays capped at 512 px, so above that size zooming in shows the preview upscaled.
+8. Zoom is relative to the export resolution (100% = one export pixel per screen pixel), matching how Photoshop reports document zoom. While fitted, the preview renders at up to 512 px so editing stays fast; after a manual zoom, it re-renders at the resolution the zoom needs (doubling from 512 up to the export size), capped at 4096, or 2048 per tile with Tile 2×2, so what is shown at 100% and above is the real export pixels (review, 2026-11-19). Rejected: keeping a 512 preview and magnifying it, which showed blur that isn't in the export.
 9. Number fields commit on change/Enter, not on every keystroke, so partially typed values like `0.` or `-` aren't clamped mid-typing.
 10. The tooltip is one shared, fixed-position element so it escapes the scrolling dock and never clips.
 11. The info icon is a drawn SVG, not an "i" character or emoji.
@@ -76,9 +76,9 @@ Plain HTML, CSS and ES modules as before. No new dependencies. The Google Fonts 
 Recorded because this sub-session runs autonomously without stopping for approval.
 - A1. Randomize and Reset stay in the top bar; New seed stays as the dice button in the Seed row. Export and Copy PNG live in the Export panel only, not duplicated in the top bar.
 - A2. No File/Edit/View dropdown menus; a toolbar is enough for the current actions and avoids a non-functional menu. Later specs can add Save and Load map to the top bar's right side.
-- A3. Cursor readout and zoom are added as cheap workspace conveniences; the readout shows the export-pixel coordinate (preview pixel × size / preview resolution) and the preview's processed value at that pixel.
+- A3. Cursor readout and zoom are added as cheap workspace conveniences; the readout shows the export-pixel coordinate and the processed value of the preview pixel covering it, marked with "≈" whenever the preview is below export resolution (review, 2026-11-19).
 - A4. Zoom shortcuts `+`/`=`, `-` and `0`, following the existing single-key shortcut style (R, T). Fit is the default on load and after Fit; any other zoom action leaves fit mode.
-- A5. Canvas uses `image-rendering: pixelated` only when the preview has the full export resolution (size ≤ 512) and the zoom is above 100%, so zooming in shows actual pixels; larger exports stay smoothly scaled because their preview is a downsampled stand-in.
+- A5. Canvas uses `image-rendering: pixelated` only when the preview has the full export resolution and the zoom is above 100%, so zooming in shows actual pixels; a downsampled preview (fitted, or tiled 4096) stays smoothly scaled.
 - A6. The render indicator becomes a thin indeterminate bar at the top of the canvas area plus the "Rendering…" status text, instead of a spinner over the image.
 - A7. Preset thumbnails stay 72 px canvases drawn at a smaller display size in a 5-column grid with names below; the highlight is an accent outline.
 - A8. Narrow layout below 760 px stacks the canvas area (55vh tall) above the dock; the page scrolls instead of the dock.
@@ -112,6 +112,9 @@ Baseline before starting: 33 tests passing.
 ### D. Docs
 - [x] D1. `PRODUCT.md` and `DESIGN.md` at the repository root.
 - [x] D2. Update `README.md` and `CLAUDE.md` for the new modules and docs.
+
+### E. Review fixes
+- [x] E1. `previewResolution` in `js/view.js` with tests; `js/app.js` renders the preview at the zoom's resolution, marks the readout approximate below export resolution and applies pixelated rendering only at full resolution (review, 2026-11-19).
 
 ### Z. Wrap-up
 - [x] Z1. `npm test` passes.
