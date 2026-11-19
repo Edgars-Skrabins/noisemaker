@@ -1,18 +1,31 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { contentType, resolvePath, createStaticServer } from '../scripts/static.js';
 
 const root = path.resolve(import.meta.dirname, '..');
 
-function rawStatus(port, rawPath) {
+function request(port, rawPath, method = 'GET') {
   return new Promise((resolve, reject) => {
-    http.get({ host: 'localhost', port, path: rawPath }, (res) => {
-      res.resume();
-      resolve(res.statusCode);
-    }).on('error', reject);
+    const req = http.request({ host: '127.0.0.1', port, path: rawPath, method }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => (body += chunk));
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
   });
+}
+
+async function startServer(t, serveRoot) {
+  const server = createStaticServer(serveRoot);
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => server.close());
+  return server.address().port;
 }
 
 test('contentType maps the served file types', () => {
@@ -62,26 +75,60 @@ test('resolvePath never escapes the root', () => {
 });
 
 test('the server serves the app with correct types and 404s the rest', async (t) => {
-  const server = createStaticServer(root);
-  await new Promise((resolve) => server.listen(0, 'localhost', resolve));
-  t.after(() => server.close());
-  const base = `http://localhost:${server.address().port}`;
+  const port = await startServer(t, root);
 
-  const index = await fetch(`${base}/`);
+  const index = await request(port, '/');
   assert.equal(index.status, 200);
-  assert.equal(index.headers.get('content-type'), 'text/html; charset=utf-8');
-  assert.match(await index.text(), /<html/i);
+  assert.equal(index.headers['content-type'], 'text/html; charset=utf-8');
+  assert.match(index.body, /<html/i);
 
-  const worker = await fetch(`${base}/js/worker.js`);
+  const worker = await request(port, '/js/worker.js');
   assert.equal(worker.status, 200);
-  assert.equal(worker.headers.get('content-type'), 'text/javascript; charset=utf-8');
-  await worker.arrayBuffer();
+  assert.equal(worker.headers['content-type'], 'text/javascript; charset=utf-8');
 
-  for (const url of ['/missing.html', '/js', '/js/', '/.git/HEAD', '/../package.json', '/%2e%2e/package.json', '/js/..%2f..%2fpackage.json']) {
-    assert.equal(await rawStatus(server.address().port, url), 404, url);
+  const head = await request(port, '/js/worker.js', 'HEAD');
+  assert.equal(head.status, 200);
+  assert.equal(head.headers['content-type'], 'text/javascript; charset=utf-8');
+  assert.equal(head.headers['content-length'], String(Buffer.byteLength(worker.body)));
+  assert.equal(head.body, '');
+
+  for (const url of ['/missing.html', '/js/', '/.git/HEAD', '/../package.json', '/%2e%2e/package.json', '/js/..%2f..%2fpackage.json']) {
+    assert.equal((await request(port, url)).status, 404, url);
   }
 
-  const post = await fetch(`${base}/`, { method: 'POST' });
-  assert.equal(post.status, 405);
-  await post.arrayBuffer();
+  assert.equal((await request(port, '/', 'POST')).status, 405);
+});
+
+test('the server redirects folders without a trailing slash', async (t) => {
+  const port = await startServer(t, root);
+
+  const plain = await request(port, '/js');
+  assert.equal(plain.status, 301);
+  assert.equal(plain.headers.location, '/js/');
+
+  const withQuery = await request(port, '/prototype?a=1&b=2');
+  assert.equal(withQuery.status, 301);
+  assert.equal(withQuery.headers.location, '/prototype/?a=1&b=2');
+
+  const doubled = await request(port, '//js');
+  assert.equal(doubled.status, 301);
+  assert.equal(doubled.headers.location, '/js/');
+});
+
+test('the server refuses symlinks that point outside the root', async (t) => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'noisemaker-serve-'));
+  t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
+  const site = path.join(dir, 'site');
+  fs.mkdirSync(site);
+  fs.writeFileSync(path.join(dir, 'secret.txt'), 'secret');
+  fs.writeFileSync(path.join(site, 'inside.txt'), 'inside');
+  fs.symlinkSync(path.join(dir, 'secret.txt'), path.join(site, 'outside.txt'));
+  fs.symlinkSync(dir, path.join(site, 'parent'));
+  fs.symlinkSync(path.join(site, 'inside.txt'), path.join(site, 'alias.txt'));
+  const port = await startServer(t, site);
+
+  assert.equal((await request(port, '/inside.txt')).body, 'inside');
+  assert.equal((await request(port, '/alias.txt')).body, 'inside');
+  assert.equal((await request(port, '/outside.txt')).status, 404);
+  assert.equal((await request(port, '/parent/secret.txt')).status, 404);
 });
