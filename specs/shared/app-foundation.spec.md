@@ -1,7 +1,7 @@
 # App foundation — Spec
 
 **Type:** feature
-**Status:** approved
+**Status:** in progress
 **Last updated:** 2026-11-19
 
 # Part 1 — Business logic and usage
@@ -75,6 +75,9 @@ Recorded because this sub-session runs autonomously without stopping for approva
 - A6. The `tileable` toggle still exists; with it off, maps don't tile, which is the user's explicit choice and not a non-tiling option.
 - A7. Noise output must match the prototype for the remaining noise types (same hash and maths), so existing presets look the same.
 - A8. Export file name stays `noisemaker_<preset or type>_<seed>_<size>.<ext>`.
+- A9. Auto-levels takes its min and max from the stored 32-bit values, so output is exactly within 0..1. The prototype took them from 64-bit values, which could produce tiny negatives.
+- A10. Randomize clears the active preset highlight, like Reset (the prototype left it on).
+- A11. The project `CLAUDE.md` already describes the real layout, so it is left unchanged.
 
 # Part 3 — Implementation TODO
 
@@ -83,21 +86,21 @@ Read Part 1 and Part 2 before starting. Work through the tasks in order and tick
 Baseline before starting: no tests, no app at the root.
 
 ### A. Pure logic
-- [ ] A1. `package.json` with `"type": "module"` and `"test": "node --test"`.
-- [ ] A2. `js/noise.js` ported from `prototype/js/worker.js` without Simplex, exposing `createSampler` and `generate`. Tests in `tests/noise.test.js`: determinism per seed, different seeds differ, output in 0..1, seamless edges (sampler at u=0 vs u=1 and v=0 vs v=1) for Perlin, Value, Worley with fBm, ridged, billow and warp, White tiles.
-- [ ] A3. `js/postprocess.js` with tests: contrast 0 gives 128 gray, invert, posterize levels, brightness clamps.
-- [ ] A4. `js/encoders.js` with tests: BMP header fields, row padding and file size; TGA header and size; R16 little-endian values and size.
-- [ ] A5. `js/settings.js`, `js/presets.js`, `js/storage.js` with tests: sanitize drops `simplex` and clamps, randomize only yields allowed values, presets sanitise to themselves, storage round-trip and broken storage.
+- [x] A1. `package.json` with `"type": "module"` and `"test": "node --test"`.
+- [x] A2. `js/noise.js` ported from `prototype/js/worker.js` without Simplex, exposing `createSampler` and `generate`. Tests in `tests/noise.test.js`: determinism per seed, different seeds differ, output in 0..1, seamless edges (sampler at u=0 vs u=1 and v=0 vs v=1) for Perlin, Value, Worley with fBm, ridged, billow and warp, White tiles.
+- [x] A3. `js/postprocess.js` with tests: contrast 0 gives 128 gray, invert, posterize levels, brightness clamps.
+- [x] A4. `js/encoders.js` with tests: BMP header fields, row padding and file size; TGA header and size; R16 little-endian values and size.
+- [x] A5. `js/settings.js`, `js/presets.js`, `js/storage.js` with tests: sanitize drops `simplex` and clamps, randomize only yields allowed values, presets sanitise to themselves, storage round-trip and broken storage.
 
 ### B. Browser app
-- [ ] B1. `js/worker.js`, `js/worker-client.js`, `js/exporter.js`.
-- [ ] B2. `index.html` and `css/style.css` from the prototype with the changes in 2.2.
-- [ ] B3. `js/app.js` UI wiring using the modules above.
+- [x] B1. `js/worker.js`, `js/worker-client.js`, `js/exporter.js`.
+- [x] B2. `index.html` and `css/style.css` from the prototype with the changes in 2.2.
+- [x] B3. `js/app.js` UI wiring using the modules above.
 
 ### C. Docs
-- [ ] C1. `README.md` via `create-readme`.
-- [ ] C2. Update `CLAUDE.md` if the layout differs.
+- [x] C1. `README.md` via `create-readme`.
+- [x] C2. Update `CLAUDE.md` if the layout differs.
 
 ### Z. Wrap-up
-- [ ] Z1. `npm test` passes.
-- [ ] Z2. Manual check in the browser via `python3 -m http.server 5173`: generation for each type, presets, Tile 2×2, Randomize, Reset, contrast 0, export in every format, no console errors.
+- [x] Z1. `npm test` passes.
+- [x] Z2. Manual check in the browser via `python3 -m http.server 5173`: generation for each type, presets, Tile 2×2, Randomize, Reset, contrast 0, export in every format, no console errors.
