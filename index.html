@@ -4,199 +4,288 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Noisemaker</title>
-<meta name="description" content="Generate procedural noise maps in the browser and export them as PNG, JPG, WebP, BMP, TGA or RAW16 heightmaps.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%238b7cff'/%3E%3Cstop offset='1' stop-color='%234fd1c5'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="description" content="Generate seamlessly tileable grayscale noise maps in the browser and export them as PNG, JPG, WebP, BMP, TGA or RAW16 heightmaps.">
+<meta name="theme-color" content="#1b1b1b">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23363636'/%3E%3Crect x='3' y='3' width='5' height='5' fill='%23e3e3e3'/%3E%3Crect x='8' y='3' width='5' height='5' fill='%238a8a8a'/%3E%3Crect x='3' y='8' width='5' height='5' fill='%235a5a5a'/%3E%3Crect x='8' y='8' width='5' height='5' fill='%23b8b8b8'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <symbol id="i-shuffle" viewBox="0 0 16 16"><path d="M2 4.5h2.2c1.3 0 2.1.6 2.8 1.7l2 3.6c.7 1.1 1.5 1.7 2.8 1.7H14M2 11.5h2.2c1 0 1.7-.4 2.3-1M9.5 5.5c.6-.6 1.3-1 2.3-1H14M12 2.5l2 2-2 2M12 9.5l2 2-2 2"/></symbol>
+  <symbol id="i-reset" viewBox="0 0 16 16"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9M2.5 2.5v2.6h2.6"/></symbol>
+  <symbol id="i-dice" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><circle cx="5.75" cy="5.75" r=".6" fill="currentColor"/><circle cx="10.25" cy="10.25" r=".6" fill="currentColor"/><circle cx="10.25" cy="5.75" r=".6" fill="currentColor"/><circle cx="5.75" cy="10.25" r=".6" fill="currentColor"/><circle cx="8" cy="8" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-info" viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 7.2v3.8"/><circle cx="8" cy="5" r=".5" fill="currentColor"/></symbol>
+  <symbol id="i-zoom-in" viewBox="0 0 16 16"><path d="M3.5 8h9M8 3.5v9"/></symbol>
+  <symbol id="i-zoom-out" viewBox="0 0 16 16"><path d="M3.5 8h9"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 16 16"><path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10"/></symbol>
+  <symbol id="i-tile" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="11" rx="1"/><path d="M8 2.5v11M2.5 8h11"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></symbol>
+</svg>
+
 <header class="topbar">
   <div class="brand">
-    <span class="logo" aria-hidden="true"></span>
-    <h1>noisemaker</h1>
-    <span class="tagline">procedural noise maps, in your browser</span>
+    <span class="mark" aria-hidden="true"></span>
+    <h1>Noisemaker</h1>
   </div>
-  <div class="top-actions">
-    <button id="randomize" class="btn ghost" type="button">Randomize</button>
-    <button id="reset" class="btn ghost" type="button">Reset</button>
+  <div class="toolbar" role="toolbar" aria-label="Map actions">
+    <button id="randomize" class="tool" type="button" title="Random settings and seed">
+      <svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg><span class="tool-text">Randomize</span>
+    </button>
+    <button id="reset" class="tool" type="button" title="Restore the default settings">
+      <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span class="tool-text">Reset</span>
+    </button>
   </div>
 </header>
 
-<main class="layout">
-  <aside class="panel" id="panel">
-    <section class="group">
-      <h2>Presets</h2>
-      <div class="presets" id="presets"></div>
-    </section>
-
-    <section class="group">
-      <h2>Noise</h2>
-      <div class="segmented four" role="radiogroup" aria-label="Noise type">
-        <label><input type="radio" name="type" data-key="type" value="perlin"><span>Perlin</span></label>
-        <label><input type="radio" name="type" data-key="type" value="value"><span>Value</span></label>
-        <label><input type="radio" name="type" data-key="type" value="worley"><span>Worley</span></label>
-        <label><input type="radio" name="type" data-key="type" value="white"><span>White</span></label>
-      </div>
-
-      <div class="field">
-        <div class="row"><span>Seed</span></div>
-        <div class="seed-row">
-          <input type="number" data-key="seed" step="1">
-          <button id="reseed" class="btn icon" type="button" title="New seed (R)" aria-label="New seed">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
-          </button>
-        </div>
-      </div>
-
-      <label class="field range" data-show="type!=white">
-        <div class="row"><span>Scale</span><output data-for="scale"></output></div>
-        <input type="range" data-key="scale" min="1" max="32" step="0.5">
-      </label>
-
-      <label class="toggle" data-show="type!=white">
-        <input type="checkbox" data-key="tileable">
-        <span class="switch"></span>
-        <span>Seamless tiling</span>
-      </label>
-
-      <div class="sub" data-show="type=worley">
-        <label class="field">
-          <div class="row"><span>Distance</span></div>
-          <select data-key="cell">
-            <option value="f1">F1 · nearest point</option>
-            <option value="f2">F2 · second nearest</option>
-            <option value="edges">F2 − F1 · cell edges</option>
-            <option value="cells">Cell ID · flat cells</option>
-          </select>
-        </label>
-        <label class="field">
-          <div class="row"><span>Metric</span></div>
-          <select data-key="metric">
-            <option value="euclidean">Euclidean</option>
-            <option value="manhattan">Manhattan</option>
-            <option value="chebyshev">Chebyshev</option>
-          </select>
-        </label>
-        <label class="field range">
-          <div class="row"><span>Jitter</span><output data-for="jitter"></output></div>
-          <input type="range" data-key="jitter" min="0" max="1" step="0.01">
+<main class="workspace">
+  <section class="canvas-area" aria-label="Preview">
+    <div class="optionsbar">
+      <div class="tool-wrap">
+        <label class="tool toggle-tool" title="Tile 2×2 (T)">
+          <input type="checkbox" data-key="tilePreview" aria-labelledby="lbl-tilePreview">
+          <svg class="icon" aria-hidden="true"><use href="#i-tile"/></svg><span id="lbl-tilePreview" class="tool-text" data-help="tilePreview">Tile 2×2</span>
         </label>
       </div>
-    </section>
-
-    <section class="group" data-show="type!=white">
-      <h2>Fractal</h2>
-      <div class="segmented four" role="radiogroup" aria-label="Fractal mode">
-        <label><input type="radio" name="fractal" data-key="fractal" value="none"><span>None</span></label>
-        <label><input type="radio" name="fractal" data-key="fractal" value="fbm"><span>fBm</span></label>
-        <label><input type="radio" name="fractal" data-key="fractal" value="ridged"><span>Ridged</span></label>
-        <label><input type="radio" name="fractal" data-key="fractal" value="billow"><span>Billow</span></label>
+      <div class="zoom" role="group" aria-label="Zoom">
+        <button id="zoom-out" class="tool icon-only" type="button" title="Zoom out (−)" aria-label="Zoom out"><svg class="icon" aria-hidden="true"><use href="#i-zoom-out"/></svg></button>
+        <output id="zoom-level" class="zoom-level" aria-live="polite" aria-label="Zoom level">100%</output>
+        <button id="zoom-in" class="tool icon-only" type="button" title="Zoom in (+)" aria-label="Zoom in"><svg class="icon" aria-hidden="true"><use href="#i-zoom-in"/></svg></button>
+        <span class="sep" aria-hidden="true"></span>
+        <button id="zoom-fit" class="tool" type="button" title="Fit to window (0)" aria-pressed="true"><svg class="icon" aria-hidden="true"><use href="#i-fit"/></svg><span class="tool-text">Fit</span></button>
+        <button id="zoom-actual" class="tool" type="button" title="Actual pixels">100%</button>
       </div>
-      <div data-show="fractal!=none">
-        <label class="field range">
-          <div class="row"><span>Octaves</span><output data-for="octaves"></output></div>
-          <input type="range" data-key="octaves" min="1" max="10" step="1">
-        </label>
-        <label class="field range">
-          <div class="row"><span>Lacunarity</span><output data-for="lacunarity"></output></div>
-          <input type="range" data-key="lacunarity" min="1.2" max="4" step="0.05">
-        </label>
-        <label class="field range">
-          <div class="row"><span>Gain</span><output data-for="gain"></output></div>
-          <input type="range" data-key="gain" min="0.1" max="0.9" step="0.01">
-        </label>
-      </div>
-      <label class="field range">
-        <div class="row"><span>Domain warp</span><output data-for="warp"></output></div>
-        <input type="range" data-key="warp" min="0" max="3" step="0.05">
-      </label>
-    </section>
-
-    <section class="group">
-      <h2>Adjust</h2>
-      <label class="field range">
-        <div class="row"><span>Contrast</span><output data-for="contrast"></output></div>
-        <input type="range" data-key="contrast" min="0" max="3" step="0.05">
-      </label>
-      <label class="field range">
-        <div class="row"><span>Brightness</span><output data-for="brightness"></output></div>
-        <input type="range" data-key="brightness" min="-0.5" max="0.5" step="0.01">
-      </label>
-      <label class="field range">
-        <div class="row"><span>Posterize</span><output data-for="steps"></output></div>
-        <input type="range" data-key="steps" min="1" max="16" step="1">
-      </label>
-      <div class="toggles">
-        <label class="toggle">
-          <input type="checkbox" data-key="invert">
-          <span class="switch"></span>
-          <span>Invert</span>
-        </label>
-        <label class="toggle">
-          <input type="checkbox" data-key="normalize">
-          <span class="switch"></span>
-          <span>Auto-levels</span>
-        </label>
-      </div>
-    </section>
-
-  </aside>
-
-  <section class="stage">
-    <div class="stage-bar">
-      <label class="toggle compact">
-        <input type="checkbox" data-key="tilePreview">
-        <span class="switch"></span>
-        <span>Tile 2×2</span>
-      </label>
     </div>
+    <div class="busy" id="busy" aria-hidden="true"></div>
     <div class="viewport" id="viewport">
-      <canvas id="view" width="512" height="512"></canvas>
-      <div class="busy" id="busy"><span></span></div>
+      <canvas id="view" width="512" height="512" aria-label="Noise map preview"></canvas>
     </div>
-
-    <div class="export">
-      <label class="field">
-        <div class="row"><span>Resolution</span></div>
-        <select data-key="size">
-          <option value="128">128 × 128</option>
-          <option value="256">256 × 256</option>
-          <option value="512">512 × 512</option>
-          <option value="1024">1024 × 1024</option>
-          <option value="2048">2048 × 2048</option>
-          <option value="4096">4096 × 4096</option>
-        </select>
-      </label>
-      <label class="field">
-        <div class="row"><span>Format</span></div>
-        <select data-key="format">
-          <option value="png">PNG</option>
-          <option value="jpg">JPG</option>
-          <option value="jpeg">JPEG</option>
-          <option value="webp">WebP</option>
-          <option value="bmp">BMP (24-bit)</option>
-          <option value="tga">TGA (32-bit)</option>
-          <option value="r16">RAW16 heightmap (.r16)</option>
-        </select>
-      </label>
-      <label class="field range quality" data-show="format=jpg|jpeg|webp">
-        <div class="row"><span>Quality</span><output data-for="quality"></output></div>
-        <input type="range" data-key="quality" min="0.5" max="1" step="0.01">
-      </label>
-      <div class="export-actions">
-        <button id="copy" class="btn ghost" type="button">Copy PNG</button>
-        <button id="download" class="btn primary" type="button">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-          <span>Export</span>
-        </button>
-      </div>
-      <div class="progress" id="progress" hidden><span></span></div>
+    <div class="statusbar">
+      <span id="status-state" class="status-state" role="status">Ready</span>
+      <span id="status-doc" class="status-doc"></span>
+      <span id="status-cursor" class="status-cursor"></span>
     </div>
   </section>
+
+  <aside class="dock" aria-label="Settings">
+    <details class="panel" open>
+      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Presets</summary>
+      <div class="panel-body">
+        <div class="presets" id="presets"></div>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Noise</summary>
+      <div class="panel-body">
+        <div class="prop">
+          <span class="prop-label" id="lbl-type" data-help="type">Type</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="lbl-type">
+            <label><input type="radio" name="type" data-key="type" value="perlin"><span>Perlin</span></label>
+            <label><input type="radio" name="type" data-key="type" value="value"><span>Value</span></label>
+            <label><input type="radio" name="type" data-key="type" value="worley"><span>Worley</span></label>
+            <label><input type="radio" name="type" data-key="type" value="white"><span>White</span></label>
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" id="lbl-seed" data-help="seed">Seed</span>
+          <div class="prop-control">
+            <input class="field seed" type="number" data-key="seed" step="1" aria-labelledby="lbl-seed">
+            <button id="reseed" class="tool icon-only" type="button" title="New seed (R)" aria-label="New seed"><svg class="icon" aria-hidden="true"><use href="#i-dice"/></svg></button>
+          </div>
+        </div>
+
+        <div class="prop" data-show="type!=white">
+          <span class="prop-label" id="lbl-scale" data-help="scale">Scale</span>
+          <div class="prop-control">
+            <input type="range" data-key="scale" min="1" max="32" step="0.5" aria-labelledby="lbl-scale">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="scale" aria-labelledby="lbl-scale">
+          </div>
+        </div>
+
+        <div class="prop" data-show="type!=white">
+          <span class="prop-label" aria-hidden="true"></span>
+          <div class="prop-control check-row">
+            <label class="check"><input type="checkbox" data-key="tileable" aria-labelledby="lbl-tileable"><span id="lbl-tileable" data-help="tileable">Seamless tiling</span></label>
+          </div>
+        </div>
+
+        <div class="prop" data-show="type=worley">
+          <span class="prop-label" id="lbl-cell" data-help="cell">Distance</span>
+          <div class="prop-control">
+            <select class="field" data-key="cell" aria-labelledby="lbl-cell">
+              <option value="f1">F1 · nearest point</option>
+              <option value="f2">F2 · second nearest</option>
+              <option value="edges">F2 − F1 · cell edges</option>
+              <option value="cells">Cell ID · flat cells</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="prop" data-show="type=worley">
+          <span class="prop-label" id="lbl-metric" data-help="metric">Metric</span>
+          <div class="prop-control">
+            <select class="field" data-key="metric" aria-labelledby="lbl-metric">
+              <option value="euclidean">Euclidean</option>
+              <option value="manhattan">Manhattan</option>
+              <option value="chebyshev">Chebyshev</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="prop" data-show="type=worley">
+          <span class="prop-label" id="lbl-jitter" data-help="jitter">Jitter</span>
+          <div class="prop-control">
+            <input type="range" data-key="jitter" min="0" max="1" step="0.01" aria-labelledby="lbl-jitter">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="jitter" aria-labelledby="lbl-jitter">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" open data-show="type!=white">
+      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Fractal</summary>
+      <div class="panel-body">
+        <div class="prop">
+          <span class="prop-label" id="lbl-fractal" data-help="fractal">Mode</span>
+          <div class="segmented" role="radiogroup" aria-labelledby="lbl-fractal">
+            <label><input type="radio" name="fractal" data-key="fractal" value="none"><span>None</span></label>
+            <label><input type="radio" name="fractal" data-key="fractal" value="fbm"><span>fBm</span></label>
+            <label><input type="radio" name="fractal" data-key="fractal" value="ridged"><span>Ridged</span></label>
+            <label><input type="radio" name="fractal" data-key="fractal" value="billow"><span>Billow</span></label>
+          </div>
+        </div>
+
+        <div class="prop" data-show="fractal!=none">
+          <span class="prop-label" id="lbl-octaves" data-help="octaves">Octaves</span>
+          <div class="prop-control">
+            <input type="range" data-key="octaves" min="1" max="10" step="1" aria-labelledby="lbl-octaves">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="octaves" aria-labelledby="lbl-octaves">
+          </div>
+        </div>
+
+        <div class="prop" data-show="fractal!=none">
+          <span class="prop-label" id="lbl-lacunarity" data-help="lacunarity">Lacunarity</span>
+          <div class="prop-control">
+            <input type="range" data-key="lacunarity" min="1.2" max="4" step="0.05" aria-labelledby="lbl-lacunarity">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="lacunarity" aria-labelledby="lbl-lacunarity">
+          </div>
+        </div>
+
+        <div class="prop" data-show="fractal!=none">
+          <span class="prop-label" id="lbl-gain" data-help="gain">Gain</span>
+          <div class="prop-control">
+            <input type="range" data-key="gain" min="0.1" max="0.9" step="0.01" aria-labelledby="lbl-gain">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="gain" aria-labelledby="lbl-gain">
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" id="lbl-warp" data-help="warp">Warp</span>
+          <div class="prop-control">
+            <input type="range" data-key="warp" min="0" max="3" step="0.05" aria-labelledby="lbl-warp">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="warp" aria-labelledby="lbl-warp">
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Adjust</summary>
+      <div class="panel-body">
+        <div class="prop">
+          <span class="prop-label" id="lbl-contrast" data-help="contrast">Contrast</span>
+          <div class="prop-control">
+            <input type="range" data-key="contrast" min="0" max="3" step="0.05" aria-labelledby="lbl-contrast">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="contrast" aria-labelledby="lbl-contrast">
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" id="lbl-brightness" data-help="brightness">Brightness</span>
+          <div class="prop-control">
+            <input type="range" data-key="brightness" min="-0.5" max="0.5" step="0.01" aria-labelledby="lbl-brightness">
+            <input class="num" type="text" autocomplete="off" spellcheck="false" data-num="brightness" aria-labelledby="lbl-brightness">
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" id="lbl-steps" data-help="steps">Posterize</span>
+          <div class="prop-control">
+            <input type="range" data-key="steps" min="1" max="16" step="1" aria-labelledby="lbl-steps">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="steps" aria-labelledby="lbl-steps">
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" aria-hidden="true"></span>
+          <div class="prop-control check-row">
+            <label class="check"><input type="checkbox" data-key="invert" aria-labelledby="lbl-invert"><span id="lbl-invert" data-help="invert">Invert</span></label>
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" aria-hidden="true"></span>
+          <div class="prop-control check-row">
+            <label class="check"><input type="checkbox" data-key="normalize" aria-labelledby="lbl-normalize"><span id="lbl-normalize" data-help="normalize">Auto-levels</span></label>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" open>
+      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Export</summary>
+      <div class="panel-body">
+        <div class="prop">
+          <span class="prop-label" id="lbl-size" data-help="size">Resolution</span>
+          <div class="prop-control">
+            <select class="field" data-key="size" aria-labelledby="lbl-size">
+              <option value="128">128 × 128</option>
+              <option value="256">256 × 256</option>
+              <option value="512">512 × 512</option>
+              <option value="1024">1024 × 1024</option>
+              <option value="2048">2048 × 2048</option>
+              <option value="4096">4096 × 4096</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="prop">
+          <span class="prop-label" id="lbl-format" data-help="format">Format</span>
+          <div class="prop-control">
+            <select class="field" data-key="format" aria-labelledby="lbl-format">
+              <option value="png">PNG</option>
+              <option value="jpg">JPG</option>
+              <option value="jpeg">JPEG</option>
+              <option value="webp">WebP</option>
+              <option value="bmp">BMP (24-bit)</option>
+              <option value="tga">TGA (32-bit)</option>
+              <option value="r16">RAW16 heightmap (.r16)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="prop" data-show="format=jpg|jpeg|webp">
+          <span class="prop-label" id="lbl-quality" data-help="quality">Quality</span>
+          <div class="prop-control">
+            <input type="range" data-key="quality" min="0.5" max="1" step="0.01" aria-labelledby="lbl-quality">
+            <input class="num" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" data-num="quality" aria-labelledby="lbl-quality">
+          </div>
+        </div>
+
+        <div class="export-actions">
+          <button id="copy" class="btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copy PNG</button>
+          <button id="download" class="btn primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Export</button>
+        </div>
+        <div class="progress" id="progress" hidden><span></span></div>
+      </div>
+    </details>
+  </aside>
 </main>
 
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script type="module" src="js/app.js"></script>
