@@ -23,7 +23,7 @@ Noisemaker so far only exists as a single-page prototype in `prototype/`. This s
   - Every offered setting tiles seamlessly when Seamless tiling is on: the right edge continues into the left edge and the bottom into the top, including with fractal layering and domain warp. Simplex noise is removed because it can't tile.
   - Output is grayscale only, black to white.
   - Settings restored from the browser are sanitised: unknown values (for example the removed `simplex` type) fall back to the defaults.
-- **Out of scope:** the professional editor redesign and info tooltips, saving maps and the Load map dialog (presets stay in the panel for now), the start screen, enabling GitHub Pages. Each has its own later spec.
+- **Out of scope:** the professional editor redesign and info tooltips, saving maps and the Load map dialog (presets stay in the panel for now), the start screen, enabling GitHub Pages. Each has its own later spec. No CI/CD pipeline (no GitHub Actions workflows) and no GitHub Pages setup or Pages deploy workflow; the overseer sets up Pages once every spec is finished.
 
 # Part 2 — Technical details
 
@@ -64,6 +64,8 @@ Changes vs the prototype:
 4. Stage chips removed; Tile 2×2 kept (user).
 5. Visual design and presets kept as in the prototype for now (overseer); a later spec redesigns.
 6. Settings persistence: the last used settings keep being restored from `localStorage`, like the prototype. Saving named maps is a later spec.
+7. Tests are run locally with `npm test` before every push; there is no CI/CD pipeline and no GitHub Actions workflow (user, 2026-11-19).
+8. GitHub Pages and any Pages deploy workflow are not set up in this spec; the overseer does that once every spec is finished (user, 2026-11-19).
 
 ## Assumptions
 Recorded because this sub-session runs autonomously without stopping for approval.
