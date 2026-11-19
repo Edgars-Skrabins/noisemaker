@@ -115,8 +115,8 @@ Baseline before starting: 73 tests passing.
 - [x] C3. `js/app.js`: New map dialog, shared template thumbnail cache, `loadTemplate` through `startMap`.
 
 ### D. Docs
-- [ ] D1. Update `README.md`, `CLAUDE.md`, `DESIGN.md` and `PRODUCT.md` as in 2.2.
+- [x] D1. Update `README.md`, `CLAUDE.md`, `DESIGN.md` and `PRODUCT.md` as in 2.2.
 
 ### Z. Wrap-up
-- [ ] Z1. `npm test` passes.
-- [ ] Z2. Manual check via `python3 -m http.server 5173`: first-run empty state, new blank map, new from template, open saved, delete (including the map the editor holds), back to start with and without unsaved changes (cancel and discard), discard prompt for unsaved work found on the start screen, reload on both screens, typed hash, Load map and Save still working, keyboard use, narrow width, no console errors.
+- [x] Z1. `npm test` passes.
+- [x] Z2. Manual check via `python3 -m http.server 5173`: first-run empty state, new blank map, new from template, open saved, delete (including the map the editor holds), back to start with and without unsaved changes (cancel and discard), discard prompt for unsaved work found on the start screen, reload on both screens, typed hash, Load map and Save still working, keyboard use, narrow width, no console errors.
