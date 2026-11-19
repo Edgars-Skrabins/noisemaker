@@ -13,9 +13,10 @@ Noisemaker is a browser app for generating seamlessly tileable grayscale noise m
 ## Project structure
 
 - `index.html`, `css/`, `js/`: the app, served as-is from the repository root.
-- `js/noise.js`, `js/postprocess.js`, `js/encoders.js`, `js/settings.js`, `js/presets.js`, `js/storage.js`: pure logic with no DOM access, tested under Node.
+- `js/noise.js`, `js/postprocess.js`, `js/encoders.js`, `js/settings.js`, `js/presets.js`, `js/storage.js`, `js/help.js`, `js/view.js`, `js/fields.js`: pure logic and data with no DOM access (noise, image adjustments, file encoders, settings, presets, storage, setting help texts, zoom maths, numeric field parsing), tested under Node.
 - `js/worker.js`, `js/worker-client.js`, `js/exporter.js`, `js/app.js`: the Web Worker, file export and UI wiring.
 - `tests/`: Node tests for the pure logic.
+- `PRODUCT.md`, `DESIGN.md`: product context and the editor's design system (colours, type, components) for future UI work.
 - `specs/`: feature and bug-fix specs.
 - `prototype/`: the original single-page prototype, kept for reference only.
 
