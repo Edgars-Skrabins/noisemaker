@@ -163,6 +163,11 @@ function updateVisibility() {
   $$('[data-show]').forEach((el) => {
     el.hidden = !matches(el.dataset.show, state);
   });
+  const hiddenOpen = $$('.step').find((step) => step.hidden && step.open);
+  if (hiddenOpen) {
+    hiddenOpen.open = false;
+    $('.step').open = true;
+  }
 }
 
 function setBusy(on) {
@@ -175,6 +180,7 @@ function updateStatusDoc() {
 }
 
 function scheduleRegen() {
+  cancelSheet();
   clearTimeout(regenTimer);
   regenTimer = setTimeout(regen, 25);
 }
@@ -190,6 +196,7 @@ function stopPreview() {
 }
 
 async function regen() {
+  cancelSheet();
   const res = wantedRes();
   pendingRes = res;
   if (previewBusy) stopPreview();
@@ -310,7 +317,7 @@ function onChange(key) {
 
 function sheetKey() {
   const { seed, size, ...rest } = noiseParams(state);
-  return JSON.stringify(rest);
+  return JSON.stringify(state.type === 'white' ? { ...rest, size } : rest);
 }
 
 function frameFor(seed) {
@@ -379,13 +386,19 @@ function stopSheet() {
   sheetWorker = null;
 }
 
+function cancelSheet() {
+  clearTimeout(sheetTimer);
+  sheetId++;
+  stopSheet();
+}
+
 function scheduleSheet() {
   clearTimeout(sheetTimer);
   sheetTimer = setTimeout(renderSheet, 60);
 }
 
 async function renderSheet() {
-  if (screen !== 'editor') return;
+  if (screen !== 'editor' || previewBusy) return;
   const key = sheetKey();
   if (key !== sheetCache.key) sheetCache = { key, data: new Map() };
   const cache = sheetCache;
@@ -757,6 +770,7 @@ function clearEditor() {
   clearTimeout(regenTimer);
   reqId++;
   stopPreview();
+  cancelSheet();
   previewBusy = false;
   setBusy(false);
   state = { ...next.settings, tilePreview: state.tilePreview };
