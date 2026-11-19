@@ -1,5 +1,7 @@
 import { formatEdited } from './maps.js';
 
+export const THUMB_SIZE = 128;
+
 function span(className, text) {
   const el = document.createElement('span');
   el.className = className;
@@ -7,7 +9,7 @@ function span(className, text) {
   return el;
 }
 
-export function mapCard({ name, meta, thumb, current = false }) {
+function mapCard({ name, meta, thumb, current = false }) {
   const item = document.createElement('li');
   item.className = 'map-card';
   item.classList.toggle('current', current);
@@ -28,8 +30,8 @@ function savedThumb(src) {
   const img = document.createElement('img');
   img.src = src;
   img.alt = '';
-  img.width = 128;
-  img.height = 128;
+  img.width = THUMB_SIZE;
+  img.height = THUMB_SIZE;
   img.decoding = 'async';
   return img;
 }
@@ -66,12 +68,12 @@ export function renderSavedList(list, maps, { currentId = null, now = Date.now()
   });
 }
 
-export function renderTemplateList(list, templates, { size = 128, onOpen } = {}) {
+export function renderTemplateList(list, templates, { onOpen } = {}) {
   list.replaceChildren();
   return templates.map((template, i) => {
     const canvas = document.createElement('canvas');
-    canvas.width = size;
-    canvas.height = size;
+    canvas.width = THUMB_SIZE;
+    canvas.height = THUMB_SIZE;
     const { item, open } = mapCard({ name: template.name, thumb: canvas });
     open.addEventListener('click', () => onOpen(i, open));
     list.append(item);

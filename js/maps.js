@@ -4,6 +4,9 @@ export const MAPS_KEY = 'noisemaker:maps:v1';
 export const CURRENT_KEY = 'noisemaker:current:v1';
 export const NAME_MAX = 60;
 export const UNTITLED = 'Untitled map';
+export const THUMB_MAX = 200000;
+
+const THUMB_PREFIXES = ['data:image/jpeg;base64,', 'data:image/png;base64,'];
 
 const MINUTE = 60000;
 const HOUR = 60 * MINUTE;
@@ -62,12 +65,17 @@ function time(v) {
   return typeof v === 'number' && Number.isFinite(v) ? v : 0;
 }
 
+function cleanThumb(thumb) {
+  if (typeof thumb !== 'string' || thumb.length > THUMB_MAX) return '';
+  return THUMB_PREFIXES.some((p) => thumb.startsWith(p)) ? thumb : '';
+}
+
 function cleanMap(entry) {
   if (!entry || typeof entry !== 'object') return null;
   const id = typeof entry.id === 'string' && entry.id ? entry.id : null;
   const name = cleanName(entry.name);
   if (!id || !name) return null;
-  const thumb = typeof entry.thumb === 'string' && entry.thumb.startsWith('data:image/') ? entry.thumb : '';
+  const thumb = cleanThumb(entry.thumb);
   return { id, name, settings: mapSettings(entry.settings), thumb, created: time(entry.created), updated: time(entry.updated) };
 }
 
@@ -150,7 +158,7 @@ export function deleteMap(storage, id) {
 }
 
 function defaultCurrent() {
-  return { mapId: null, template: null, name: UNTITLED, base: mapSettings(DEFAULTS) };
+  return { mapId: null, name: UNTITLED, base: mapSettings(DEFAULTS) };
 }
 
 export function loadCurrent(storage) {
@@ -163,7 +171,6 @@ export function loadCurrent(storage) {
   if (!raw || typeof raw !== 'object') return defaultCurrent();
   return {
     mapId: typeof raw.mapId === 'string' && raw.mapId ? raw.mapId : null,
-    template: typeof raw.template === 'string' && raw.template ? raw.template : null,
     name: cleanName(raw.name) || UNTITLED,
     base: raw.base && typeof raw.base === 'object' ? mapSettings(raw.base) : null,
   };
@@ -182,7 +189,7 @@ export function startMap(template, settings) {
   const { size, format, quality } = settings;
   const base = mapSettings({ ...DEFAULTS, ...(template ? template.settings : {}), size, format, quality });
   return {
-    current: { mapId: null, template: template ? template.name : null, name: template ? template.name : UNTITLED, base },
+    current: { mapId: null, name: template ? template.name : UNTITLED, base },
     settings: base,
   };
 }

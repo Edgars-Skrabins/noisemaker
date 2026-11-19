@@ -33,7 +33,7 @@ function wire(dialog) {
   });
 }
 
-export function firstStop(dialog) {
+function firstStop(dialog) {
   return stops(dialog)[0] || null;
 }
 
@@ -48,6 +48,7 @@ export function openDialog(dialog, { opener = document.activeElement, focus } = 
 
 export function confirmDialog({ title, message, confirm, opener }) {
   const dialog = document.getElementById('confirm-dialog');
+  if (dialog.open) return Promise.resolve(false);
   document.getElementById('confirm-title').textContent = title;
   document.getElementById('confirm-message').textContent = message;
   document.getElementById('confirm-ok').textContent = confirm;

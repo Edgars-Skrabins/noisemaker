@@ -11,7 +11,7 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 
 ## Layout
 - `index.html`, `css/`, `js/`: the app, served as-is from the repository root.
-- `tests/`: Node tests for the pure logic (noise engine, post-processing, encoders, storage, saved maps).
+- `tests/`: Node tests for the pure, DOM-free modules in `js/`, plus checks that `index.html` matches the settings definitions.
 - `prototype/`: the original single-page prototype. Reference only, never edited and not part of the app.
 - `specs/`: feature and bug-fix specs.
 - `PRODUCT.md` and `DESIGN.md`: product context and the design system. New UI reuses the `DESIGN.md` tokens and components.
