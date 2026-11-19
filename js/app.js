@@ -535,6 +535,7 @@ function openLoad() {
   hideTip();
   syncCurrent();
   renderSaved();
+  buildTemplates().catch((err) => toast('Template thumbnails failed: ' + err.message));
   const hasSaved = listMaps(storage).length > 0;
   selectTab(hasSaved ? 'saved' : 'templates');
   const dialog = $('#load-dialog');
@@ -763,4 +764,3 @@ bind();
 layout();
 updateCursor();
 regen();
-buildTemplates().catch((err) => toast('Template thumbnails failed: ' + err.message));
