@@ -431,10 +431,11 @@ async function submitSave() {
   const settings = mapSettings(state);
   saving = true;
   $('#save-submit').disabled = true;
-  const worker = new NoiseWorker();
-  saveJob = worker;
+  let worker = null;
   let thumb;
   try {
+    worker = new NoiseWorker();
+    saveJob = worker;
     thumb = await thumbnail(worker, settings);
   } catch (err) {
     if (!(err instanceof CancelledError)) setSaveError('thumb', err.message);
