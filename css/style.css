@@ -10,6 +10,12 @@
   --line: #3a3a3a;
   --line-strong: #4a4a4a;
   --edge: #141414;
+  --tooltip: #3d3d3d;
+  --tooltip-line: #555555;
+  --track-fill: #8f8f8f;
+  --knob-line: #1a1a1a;
+  --selected-line: #5a5a5a;
+  --hover-line: #6a6a6a;
   --text: #e3e3e3;
   --text-2: #a6a6a6;
   --text-3: #8a8a8a;
@@ -403,14 +409,14 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-runnable-track {
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(to right, #8f8f8f var(--pct), var(--well) var(--pct));
+  background: linear-gradient(to right, var(--track-fill) var(--pct), var(--well) var(--pct));
   box-shadow: 0 0 0 1px var(--line);
 }
 
 input[type="range"]::-moz-range-track {
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(to right, #8f8f8f var(--pct), var(--well) var(--pct));
+  background: linear-gradient(to right, var(--track-fill) var(--pct), var(--well) var(--pct));
   box-shadow: 0 0 0 1px var(--line);
 }
 
@@ -419,7 +425,7 @@ input[type="range"]::-webkit-slider-thumb {
   width: 11px;
   height: 11px;
   margin-top: -4px;
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--knob-line);
   border-radius: 50%;
   background: var(--text);
 }
@@ -427,7 +433,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
   width: 9px;
   height: 9px;
-  border: 1px solid #1a1a1a;
+  border: 1px solid var(--knob-line);
   border-radius: 50%;
   background: var(--text);
 }
@@ -463,7 +469,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 }
 
 .segmented span:hover { background: var(--raised); color: var(--text); }
-.segmented input:checked + span { background: var(--pressed); color: var(--text); box-shadow: inset 0 0 0 1px #5a5a5a; }
+.segmented input:checked + span { background: var(--pressed); color: var(--text); box-shadow: inset 0 0 0 1px var(--selected-line); }
 .segmented input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 0; }
 
 .check-row { min-height: 20px; }
@@ -490,7 +496,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   flex: none;
 }
 
-.check input:hover { border-color: #6a6a6a; }
+.check input:hover { border-color: var(--hover-line); }
 
 .check input:checked {
   border-color: var(--accent);
@@ -543,9 +549,9 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   z-index: 20;
   max-width: 260px;
   padding: 8px 10px;
-  border: 1px solid #555555;
+  border: 1px solid var(--tooltip-line);
   border-radius: 4px;
-  background: #3d3d3d;
+  background: var(--tooltip);
   color: var(--text);
   font-size: 12px;
   line-height: 1.45;
@@ -562,9 +568,9 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   z-index: 30;
   max-width: calc(100vw - 32px);
   padding: 7px 12px;
-  border: 1px solid #555555;
+  border: 1px solid var(--tooltip-line);
   border-radius: 4px;
-  background: #3d3d3d;
+  background: var(--tooltip);
   color: var(--text);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   opacity: 0;
@@ -639,7 +645,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
   cursor: pointer;
 }
 
-.radio input:hover { border-color: #6a6a6a; }
+.radio input:hover { border-color: var(--hover-line); }
 .radio input:checked { border-color: var(--accent); background: radial-gradient(circle, var(--accent) 0 3.5px, var(--well) 4px); }
 
 .name-row { display: grid; grid-template-columns: 78px minmax(0, 1fr); align-items: center; gap: 8px; }
@@ -671,7 +677,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 }
 
 .tab:hover { background: var(--raised); color: var(--text); }
-.tab[aria-selected="true"] { background: var(--pressed); color: var(--text); box-shadow: inset 0 0 0 1px #5a5a5a; }
+.tab[aria-selected="true"] { background: var(--pressed); color: var(--text); box-shadow: inset 0 0 0 1px var(--selected-line); }
 .tab:focus-visible { outline-offset: 0; }
 
 .library-body { align-content: start; flex: 1; }
@@ -713,7 +719,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(
 
 .map-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .map-meta { color: var(--text-2); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.map-open:hover .map-thumb { box-shadow: 0 0 0 1px #6a6a6a; }
+.map-open:hover .map-thumb { box-shadow: 0 0 0 1px var(--hover-line); }
 .map-open:focus-visible { outline: none; }
 .map-open:focus-visible .map-thumb { box-shadow: 0 0 0 2px var(--accent), 0 0 0 3px var(--card-gap, var(--panel)), 0 0 0 4px var(--accent); }
 .map-card.current .map-thumb { box-shadow: 0 0 0 2px var(--accent); }
