@@ -1,6 +1,6 @@
 # Noisemaker
 
-Noisemaker is a browser app for generating seamlessly tileable grayscale noise maps (Perlin, Value, Worley and White noise, with fractal layering and domain warp) for game development. Maps can be saved in the browser and reopened later, or started from a template, and export as PNG, JPG, JPEG, WebP, BMP, TGA or RAW16 (`.r16`) heightmaps. Everything runs in the browser; nothing is uploaded.
+Noisemaker is a browser app for generating seamlessly tileable grayscale noise maps (Perlin, Value, Worley and White noise, with fractal layering and domain warp) for game development. The app opens on a start screen listing your saved maps, where a new map starts blank or from a template. Maps are saved in the browser and export as PNG, JPG, JPEG, WebP, BMP, TGA or RAW16 (`.r16`) heightmaps. Everything runs in the browser; nothing is uploaded.
 
 ## Tech stack
 

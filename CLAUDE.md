@@ -16,7 +16,9 @@ Noisemaker is a browser app for generating procedural, seamlessly tileable grays
 - `specs/`: feature and bug-fix specs.
 - `PRODUCT.md` and `DESIGN.md`: product context and the design system. New UI reuses the `DESIGN.md` tokens and components.
 
-Keep pure logic (noise math, image post-processing, file encoders, storage) in modules with no DOM access so it can be tested under Node. UI modules wire that logic to the DOM. Presets (`js/presets.js`) are read-only templates offered only in the Load map dialog; `js/library.js` builds the saved-map and template lists so other screens can reuse them.
+Keep pure logic (noise math, image post-processing, file encoders, storage) in modules with no DOM access so it can be tested under Node. UI modules wire that logic to the DOM. Presets (`js/presets.js`) are read-only templates offered in the New map dialog (after "Blank") and the Load map dialog; `js/library.js` builds the saved-map and template lists for the start screen and the dialogs.
+
+The app is one page with two screens, the start screen and the editor, switched by `data-screen` on `<html>` in `js/app.js`. The editor is reflected in the URL as `#editor` (set with `history.replaceState`, so there are no history entries per screen); the plain URL opens the start screen. Keep all paths relative so the site works from any folder, e.g. GitHub Pages.
 
 ## Commands
 - Run locally: `python3 -m http.server 5173` from the repository root, then open http://localhost:5173. Workers and ES modules don't load from `file://`.
