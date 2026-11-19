@@ -21,6 +21,8 @@ web (desktop first; a narrow stacked layout keeps it usable on small screens).
 - A professional, Photoshop-like editor: dense, dark, neutral gray chrome with a single blue accent.
 - The chrome stays achromatic so it never tints the perception of the map.
 
+## Features
+- Saved maps in the browser with save, overwrite and save-as-new, and a "Load map" dialog offering saved maps or templates (the presets).
+
 ## Planned
-- Saved maps with save, overwrite and save-as-new, plus a "Load map" dialog offering presets or saved maps.
 - A start screen listing saved maps and "New map".

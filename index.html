@@ -22,6 +22,10 @@
   <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M10.5 3.5v-.5a1 1 0 0 0-1-1H3.5a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h.5"/></symbol>
   <symbol id="i-download" viewBox="0 0 16 16"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10"/></symbol>
   <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m6 4 4 4-4 4"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 16 16"><path d="M2.5 4.5a1 1 0 0 1 1-1h2.8l1.4 1.5h4.8a1 1 0 0 1 1 1v6.5a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 16 16"><path d="M2.5 3.5a1 1 0 0 1 1-1h7.3l2.7 2.7v7.3a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z"/><path d="M5.5 2.5v3h4.5v-3M5 13.5V9.5h6v4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 16 16"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.1a1 1 0 0 0 1 .9h3.8a1 1 0 0 0 1-.9l.6-8.1"/></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
 </svg>
 
 <header class="topbar">
@@ -29,12 +33,23 @@
     <span class="mark" aria-hidden="true"></span>
     <h1>Noisemaker</h1>
   </div>
+  <div class="doc" id="doc">
+    <span id="doc-name" class="doc-name">Untitled map</span><span id="doc-dirty" class="doc-dirty" role="img" aria-label="Unsaved changes" title="Unsaved changes" hidden></span><span id="doc-note" class="doc-note">Not saved</span>
+  </div>
   <div class="toolbar" role="toolbar" aria-label="Map actions">
     <button id="randomize" class="tool" type="button" title="Random settings and seed">
       <svg class="icon" aria-hidden="true"><use href="#i-shuffle"/></svg><span class="tool-text">Randomize</span>
     </button>
     <button id="reset" class="tool" type="button" title="Restore the default settings">
       <svg class="icon" aria-hidden="true"><use href="#i-reset"/></svg><span class="tool-text">Reset</span>
+    </button>
+  </div>
+  <div class="toolbar toolbar-end" role="toolbar" aria-label="File">
+    <button id="load-map" class="tool" type="button" title="Open a saved map or a template" aria-haspopup="dialog">
+      <svg class="icon" aria-hidden="true"><use href="#i-folder"/></svg><span class="tool-text">Load map</span>
+    </button>
+    <button id="save-map" class="tool" type="button" title="Save (Ctrl+S)" aria-haspopup="dialog" aria-keyshortcuts="Control+S Meta+S">
+      <svg class="icon" aria-hidden="true"><use href="#i-save"/></svg><span class="tool-text">Save</span>
     </button>
   </div>
 </header>
@@ -69,13 +84,6 @@
   </section>
 
   <aside class="dock" aria-label="Settings">
-    <details class="panel" open>
-      <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Presets</summary>
-      <div class="panel-body">
-        <div class="presets" id="presets"></div>
-      </div>
-    </details>
-
     <details class="panel" open>
       <summary class="panel-head"><svg class="chev" aria-hidden="true"><use href="#i-chevron"/></svg>Noise</summary>
       <div class="panel-body">
@@ -284,6 +292,64 @@
     </details>
   </aside>
 </main>
+
+<dialog class="dialog" id="save-dialog" aria-labelledby="save-title">
+  <form class="dialog-form" id="save-form" method="dialog" novalidate>
+    <header class="dialog-head">
+      <h2 id="save-title">Save map</h2>
+    </header>
+    <div class="dialog-body">
+      <fieldset class="choice" id="save-choice">
+        <legend class="visually-hidden">How to save</legend>
+        <label class="radio"><input type="radio" name="save-mode" id="save-overwrite" value="overwrite"><span id="save-overwrite-text">Overwrite</span></label>
+        <label class="radio"><input type="radio" name="save-mode" id="save-new" value="new"><span>Save as new map</span></label>
+      </fieldset>
+      <div class="name-row">
+        <label for="save-name" class="name-label">Name</label>
+        <input id="save-name" class="field" type="text" maxlength="60" autocomplete="off" spellcheck="false" aria-describedby="save-error">
+      </div>
+      <p id="save-error" class="dialog-error" role="alert"></p>
+    </div>
+    <footer class="dialog-foot">
+      <button class="btn" type="button" data-close>Cancel</button>
+      <button class="btn primary" type="submit" id="save-submit">Save</button>
+    </footer>
+  </form>
+</dialog>
+
+<dialog class="dialog dialog-wide" id="load-dialog" aria-labelledby="load-title">
+  <header class="dialog-head">
+    <h2 id="load-title">Load map</h2>
+    <button class="tool icon-only" type="button" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button>
+  </header>
+  <div class="tabs" role="tablist" aria-label="Map sources">
+    <button class="tab" type="button" role="tab" id="tab-saved" aria-controls="panel-saved" aria-selected="true">Saved maps</button>
+    <button class="tab" type="button" role="tab" id="tab-templates" aria-controls="panel-templates" aria-selected="false" tabindex="-1">Templates</button>
+  </div>
+  <div class="dialog-body library-body">
+    <div role="tabpanel" id="panel-saved" aria-labelledby="tab-saved">
+      <ul class="map-grid" id="saved-list"></ul>
+    </div>
+    <div role="tabpanel" id="panel-templates" aria-labelledby="tab-templates" hidden>
+      <ul class="map-grid" id="template-list"></ul>
+    </div>
+  </div>
+</dialog>
+
+<dialog class="dialog" id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+  <form class="dialog-form" method="dialog">
+    <header class="dialog-head">
+      <h2 id="confirm-title"></h2>
+    </header>
+    <div class="dialog-body">
+      <p id="confirm-message" class="confirm-message"></p>
+    </div>
+    <footer class="dialog-foot">
+      <button class="btn" type="submit" value="cancel" id="confirm-cancel">Cancel</button>
+      <button class="btn primary" type="submit" value="confirm" id="confirm-ok"></button>
+    </footer>
+  </form>
+</dialog>
 
 <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

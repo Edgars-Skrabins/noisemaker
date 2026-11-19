@@ -112,7 +112,7 @@ A working image-editor shell in the tradition of Photoshop: top bar, canvas work
 ## Colors
 - All chrome is true neutral gray (equal R, G and B). Never tint the ground, panels or pasteboard warm or cool: users judge grayscale values by eye and a tinted surround shifts them.
 - Layers from dark to light: `edge` (1 px separators between regions), `ground`, `well` (inside fields), `pasteboard` (behind the canvas), `bar` (top bar, options bar, status bar, panel headers), `panel` (dock), `raised` / `raised-hover` / `pressed` (controls and their states).
-- One accent blue. `accent` marks focus rings, checked checkboxes, selected presets, the render bar and progress. `accent-fill` (deeper, ≥4.5:1 with white) is the only accent used behind text: the primary button.
+- One accent blue. `accent` marks focus rings, checked checkboxes, the open map card, the render bar and progress. `accent-fill` (deeper, ≥4.5:1 with white) is the only accent used behind text: the primary button.
 - Text: `text` for values and primary labels, `text-2` for property labels and secondary chrome, `text-3` only for icons (info buttons).
 
 ## Typography
@@ -123,14 +123,14 @@ A working image-editor shell in the tradition of Photoshop: top bar, canvas work
 - Desktop: CSS grid. Top bar 36 px; workspace = canvas area (options bar 32 px, scrollable viewport with 24 px padding, status bar 22 px) + dock 304 px.
 - Property rows: 78 px label column + flexible control column, 8 px gap, 4 px between rows; sliders take the remaining width next to a 54 px numeric field.
 - Below 760 px: the page scrolls, the top bar is sticky with icon-only buttons, the canvas area is 55vh above a full-width dock.
-- The top bar keeps room on the left (next to the brand) and right for future Home, Save and Load map actions.
+- Top bar: brand, then the map name (with a dot marker for unsaved changes and a "Not saved" note for never-saved maps), Randomize and Reset; Load map and Save on the right. The brand's place is reserved for a future Home (start screen) action.
 
 ## Elevation & Depth
 - Regions are separated by 1 px `edge` lines and value steps, not shadows.
-- Shadows exist on three things only: the canvas (a 1 px dark ring plus a soft 2/8 px drop), the tooltip and the toast (6/18 px, 50% black).
+- Shadows exist on four things only: the canvas (a 1 px dark ring plus a soft 2/8 px drop), the tooltip, the toast and dialogs (6/18 px, 50% black).
 
 ## Shapes
-- 3 px radius on controls and buttons, 2 px on segments, checkboxes and preset thumbnails, 4 px on tooltip and toast, 0 on panels and bars.
+- 3 px radius on controls and buttons, 2 px on segments, checkboxes and map thumbnails, 4 px on tooltip, toast and dialogs, 0 on panels and bars.
 - Icons: inline SVG sprite on a 16 px grid, 1.5 px stroke, round caps and joins, `currentColor`.
 
 ## Components
@@ -142,6 +142,9 @@ A working image-editor shell in the tradition of Photoshop: top bar, canvas work
 - **Segmented** (`.segmented`): radio group in a `well` trough; the selected segment is `pressed` with a 1 px `#5a5a5a` inset.
 - **Checkbox** (`.check`): 14 px, `accent` fill with a white check when on.
 - **Info button** (`.info`): 16 px, drawn "i" icon in `text-3`; opens the shared fixed tooltip on hover (350 ms), keyboard focus or click; Escape, blur, outside click or scroll closes it. In the dock the tooltip opens to the left of the dock.
+- **Dialog** (`dialog.dialog`, opened with `openDialog` from `js/dialogs.js`): native modal `<dialog>`, `panel` surface, 1 px `line-strong` border, 4 px radius, 50% black backdrop; a 34 px `bar` header with a 12 px semibold title, a 12 px padded body and a right-aligned footer (Cancel, then the primary action). Tab wraps inside; Escape and Cancel close it and focus returns to the opener. `confirmDialog` is the shared confirmation, with focus on Cancel. Errors are 11 px text in `--error` under the field.
+- **Tabs** (`.tab` in `.tabs`): the segmented style in a `well` trough, `role="tablist"`, arrow keys move between tabs.
+- **Map card** (`.map-card`): square thumbnail with 2 px radius and a `line` ring, name, `text-2` meta line; hover lightens the ring, focus and the open map get the accent ring, an "Open" badge marks the open map; the delete icon button appears on hover or focus.
 - **Status bar**: render state, export size and format, cursor position in export pixels and the height value (0–1 and 0–255).
 
 ## Do's and Don'ts
@@ -150,4 +153,4 @@ A working image-editor shell in the tradition of Photoshop: top bar, canvas work
 - Do keep motion to state changes, 120–180 ms, ease-out, and respect `prefers-reduced-motion`.
 - Don't use gradients, glows, glass, coloured shadows or large radii.
 - Don't uppercase panel titles or labels, and don't add eyebrow labels above headings.
-- Don't put the accent behind text other than on the single primary action of a panel.
+- Don't put the accent behind text other than on the single primary action of a panel or dialog.
